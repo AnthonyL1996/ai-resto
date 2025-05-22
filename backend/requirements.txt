@@ -7,3 +7,4 @@ sqlalchemy==2.0.25
 python-jose==3.3.0
 passlib==1.7.4
 requests==2.31.0
+python-escpos==3.0a8
