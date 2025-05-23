@@ -51,6 +51,29 @@ async def print_text(text: str, align: Optional[str] = "left"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/kitchen-order")
+async def print_kitchen_order(
+    order_time: str,
+    ready_time: str,
+    customer_name: str,
+    customer_contact: str,
+    items: list[str]
+):
+    if not printer_service:
+        raise HTTPException(status_code=503, detail="Printer not available")
+    
+    try:
+        printer_service.print_kitchen_order({
+            "order_time": order_time,
+            "ready_time": ready_time,
+            "customer_name": customer_name,
+            "customer_contact": customer_contact,
+            "items": items
+        })
+        return {"status": "success", "message": "Kitchen order printed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/image")
 async def print_image(image_path: str):
     if not printer_service:

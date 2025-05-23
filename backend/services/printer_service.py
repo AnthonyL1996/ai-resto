@@ -97,3 +97,46 @@ class PrinterService:
                 self.printer = None
             except Exception as e:
                 self.logger.error(f"Failed to close printer: {str(e)}")
+
+    def print_kitchen_order(self, order_details: dict):
+        """Print a kitchen order ticket with formatted layout
+        
+        Args:
+            order_details: Dictionary containing:
+                - order_time: When order was placed
+                - ready_time: Expected ready time
+                - customer_name: Customer name
+                - customer_contact: Phone/contact info
+                - items: List of order items
+        """
+        if not self.printer:
+            raise RuntimeError("Printer not initialized")
+            
+        try:
+            # Header with order info
+            self.printer.set(align='center', text_type='B', width=2, height=2)
+            self.printer.text("KITCHEN ORDER\n")
+            self.printer.set(align='left', text_type='B', width=1, height=1)
+            
+            # Order details
+            self.printer.text(f"Order Time: {order_details['order_time']}\n")
+            self.printer.text(f"Ready By: {order_details['ready_time']}\n\n")
+            
+            # Customer info
+            self.printer.text(f"Customer: {order_details['customer_name']}\n")
+            self.printer.text(f"Contact: {order_details['customer_contact']}\n\n")
+            
+            # Order items in large font
+            self.printer.set(text_type='B', width=2, height=2)
+            self.printer.text("ORDER ITEMS:\n")
+            for item in order_details['items']:
+                self.printer.text(f"- {item}\n")
+            
+            # Reset formatting and add cut line
+            self.printer.set(text_type='normal', width=1, height=1)
+            self.printer.text("\n")
+            self.printer.cut()
+            
+        except Exception as e:
+            self.logger.error(f"Print kitchen order failed: {str(e)}")
+            raise

@@ -14,24 +14,21 @@ def test_printer(connection_type='usb', **kwargs):
         # Initialize printer
         printer = PrinterService(connection_type, **kwargs)
         
-        # Test text printing
-        logger.info("Testing text printing")
-        printer.print_text("MY WIFE ONLY GIVES A 7/10 FOR TITANT", align="center")
-        printer.print_text("SOME TIMES SHE IS NICE, OTHER TIMES SHE FARTS TOO MUCH")
-        printer.print_text("SHE ALSO FARTS IN THE EARLY MORNING, WHEN WAKING UP, BUT ALSO IN HER SLEEP")
-        printer.print_text("Center aligned text", align="center")
-        printer.print_text("Right aligned text", align="right")
+        # Test kitchen order printing
+        logger.info("Testing kitchen order printing")
+        printer.print_kitchen_order({
+            "order_time": "2025-05-23 22:15:00",
+            "ready_time": "2025-05-23 22:30:00",
+            "customer_name": "John Doe",
+            "customer_contact": "+32 123 456 789",
+            "items": [
+                "Burger with fries",
+                "Coca-Cola",
+                "Chocolate cake"
+            ]
+        })
         
-        # Test cutting
-        logger.info("Testing paper cut")
-        printer.cut()
-        
-        # Wait a moment between tests
-        time.sleep(2)
-        
-        # Test full cut again
-        printer.print_text("Testing full cut")
-        printer.cut()
+
         
         logger.info("All tests completed successfully")
         
@@ -46,7 +43,9 @@ if __name__ == "__main__":
     # Try all possible endpoint combinations
     endpoint_combinations = []
     for in_ep in range(0x81, 0x8F):
+        print(in_ep)
         for out_ep in range(0x01, 0x0F):
+            print('in_ep' + in_ep + ' | out_ep' + out_ep)
             endpoint_combinations.append({'in_ep': in_ep, 'out_ep': out_ep})
     
     for endpoints in endpoint_combinations:
