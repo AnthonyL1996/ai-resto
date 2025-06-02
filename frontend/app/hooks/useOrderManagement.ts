@@ -12,6 +12,7 @@ const initialOrderFormData: OrderFormData = {
   source: 'manual',
   notes: '',
   items: [],
+  requestedReadyTime: undefined,
 };
 
 export function useOrderManagement(injectedOrderService: IOrderService = orderService) {
@@ -62,7 +63,12 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
   const handleCreateOrder = useCallback(async () => {
     if (!orderForm.customerName || orderForm.items.length === 0) return null;
     try {
-      const newOrder = await injectedOrderService.createOrder(orderForm, orderForm.items);
+      const finalFormData = {
+        ...orderForm,
+        requestedReadyTime: orderForm.requestedReadyTime ? new Date(orderForm.requestedReadyTime) : undefined,
+      };
+
+      const newOrder = await injectedOrderService.createOrder(finalFormData, finalFormData.items);
       setOrders(prev => [newOrder, ...prev]); // Or refreshOrders()
       setIsModalOpen(false);
       resetOrderForm();
@@ -77,7 +83,11 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
   const handleUpdateOrder = useCallback(async () => {
     if (!editingOrder || !orderForm.customerName || orderForm.items.length === 0) return null;
     try {
-      const updated = await injectedOrderService.updateOrder(editingOrder.id, orderForm, orderForm.items);
+        const finalFormData = {
+        ...orderForm,
+        requestedReadyTime: orderForm.requestedReadyTime ? new Date(orderForm.requestedReadyTime) : undefined,
+      };
+      const updated = await injectedOrderService.updateOrder(editingOrder.id, finalFormData, finalFormData.items);
       setOrders(prev => prev.map(o => (o.id === editingOrder.id ? updated : o))); // Or refreshOrders()
       setEditingOrder(null);
       setIsModalOpen(false);
@@ -120,7 +130,8 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
       paymentMethod: order.paymentMethod,
       source: order.source,
       notes: order.notes || '',
-      items: [...order.items], // Deep copy items
+      items: [...order.items],
+      requestedReadyTime: order.requestedReadyTime ? new Date(order.requestedReadyTime) : undefined,
     });
     setIsModalOpen(true);
   }, []);

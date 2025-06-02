@@ -22,4 +22,5 @@ export interface Order {
   estimatedTime: number;
   source: OrderSource;
   notes?: string;
+  requestedReadyTime?: Date;
 }

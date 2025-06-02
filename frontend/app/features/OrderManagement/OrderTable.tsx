@@ -3,7 +3,7 @@ import React from 'react';
 import { Table, ScrollArea, Badge, ActionIcon, Menu, rem, Text } from '@mantine/core';
 import { MoreVertical, Edit, Trash2, Printer as PrintIcon } from 'lucide-react';
 import type { Order } from '../../types/order.types'; // Adjust path
-import { formatCurrency, formatTime } from '../../utils/formatting'; // Adjust path
+import { formatCurrency, formatTime, formatRequestedTime } from '../../utils/formatting'; // Adjust path
 import { getStatusColor, getStatusText } from '../../utils/statusHelpers'; // Adjust path
 
 interface OrderTableProps {
@@ -27,6 +27,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({ orders, onEdit, onDelete
             <Table.Th>Total</Table.Th>
             <Table.Th>Status</Table.Th>
             <Table.Th>Source</Table.Th>
+            <Table.Th>Req. Ready Time</Table.Th> 
             <Table.Th>Time</Table.Th>
             <Table.Th>Actions</Table.Th>
           </Table.Tr>
@@ -46,6 +47,11 @@ export const OrderTable: React.FC<OrderTableProps> = ({ orders, onEdit, onDelete
                 </Table.Td>
                 <Table.Td>
                   <Badge variant="outline" size="sm">{order.source}</Badge>
+                </Table.Td>
+                <Table.Td>
+                  {order.requestedReadyTime
+                    ? formatRequestedTime(new Date(order.requestedReadyTime)) 
+                    : 'N/A'}
                 </Table.Td>
                 <Table.Td>{formatTime(order.timestamp)}</Table.Td>
                 <Table.Td>

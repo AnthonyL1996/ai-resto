@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, Text, Badge, Button, Group, Stack, Avatar, Divider, Paper, ActionIcon, Box } from '@mantine/core';
-import { Clock, Check, ChefHat, Printer } from 'lucide-react';
+import { Clock, Check, ChefHat, Printer, CalendarClock } from 'lucide-react';
 import type { Order, OrderItem, OrderStatus } from '../../types/order.types'; // Adjust path
-import { formatTime, formatCurrency } from '../../utils/formatting'; // Adjust path
+import { formatTime, formatCurrency, formatRequestedTime } from '../../utils/formatting'; // Adjust path
 import { getStatusColor, getStatusText, getNextStatus } from '../../utils/statusHelpers'; // Adjust path
 
 export interface OrderCardProps {
@@ -47,6 +47,18 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, onStatusUpdate, onP
             {getStatusText(order.status)}
           </Badge>
         </Group>
+
+              {order.requestedReadyTime && (
+        <Group justify="space-between" mb="xs">
+            <Group gap="xs" c="blue.7"> {/* Choose a color that stands out */}
+                <CalendarClock size={16} />
+                <Text size="sm" fw={500}>
+                    {formatRequestedTime(order.requestedReadyTime)}
+                </Text>
+            </Group>
+            {/* You might want to compare with current time to show if it's due soon/late */}
+        </Group>
+      )}
 
         <Group justify="space-between" mb="md">
           <Group gap="xs">

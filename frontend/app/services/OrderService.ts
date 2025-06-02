@@ -17,13 +17,15 @@ export class LocalOrderService implements IOrderService {
             { name: 'Nasi Goreng', quantity: 1, modifications: ['Vegetarian'], price: 9.50 },
             { name: 'Spring Rolls', quantity: 3, modifications: [], price: 6.00 }
           ],
-          paymentMethod: 'card', total: 52.50, estimatedTime: 15, source: 'kiosk', notes: 'Customer is allergic to nuts'
+          paymentMethod: 'card', total: 52.50, estimatedTime: 15, source: 'kiosk', notes: 'Customer is allergic to nuts',
+          requestedReadyTime: new Date(Date.now() + 30 * 60000)
         },
         {
           id: 'ORD002', orderNumber: 2, timestamp: new Date(Date.now() - 3 * 60000), status: 'preparing',
           customerName: 'Marie Dupont',
           items: [ { name: 'Pad Thai', quantity: 1, modifications: ['No peanuts'], price: 10.50 }, { name: 'Tom Yum Soup', quantity: 2, modifications: ['Extra vegetables'], price: 7.50 } ],
-          paymentMethod: 'cash', total: 25.50, estimatedTime: 10, source: 'website'
+          paymentMethod: 'cash', total: 25.50, estimatedTime: 10, source: 'website',
+          requestedReadyTime: new Date(Date.now() + 45 * 60000)
         }
   ];
 
@@ -61,6 +63,7 @@ export class LocalOrderService implements IOrderService {
       estimatedTime: 10 + Math.floor(Math.random() * 15), // Could be more sophisticated
       source: formData.source,
       notes: formData.notes || undefined,
+      requestedReadyTime: formData.requestedReadyTime ? new Date(formData.requestedReadyTime) : undefined,
     };
     this.orders = [newOrder, ...this.orders];
     return Promise.resolve(newOrder);
@@ -79,6 +82,7 @@ export class LocalOrderService implements IOrderService {
       total: this.calculateOrderTotal(items),
       source: formData.source,
       notes: formData.notes || undefined,
+      requestedReadyTime: formData.requestedReadyTime ? new Date(formData.requestedReadyTime) : undefined,
     };
     this.orders[orderIndex] = updatedOrder;
     return Promise.resolve(updatedOrder);

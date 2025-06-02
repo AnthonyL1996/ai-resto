@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Stack, Grid, TextInput, Select, Textarea, Divider, Card, Button, Group, NumberInput, ActionIcon, Text, Box } from '@mantine/core';
-import { Save, Trash2 } from 'lucide-react';
+import { DateTimePicker } from '@mantine/dates';
+import { Save, Trash2, CalendarDays } from 'lucide-react';
 import type { OrderFormData } from '../../types/form.types'; // Use FormOrderItem if it differs
 import type { OrderItem as FormOrderItem } from '../../types/order.types';
 import type { PaymentMethod, OrderSource, Order } from '../../types/order.types'; // Adjust path
@@ -82,6 +83,16 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
             />
           </Grid.Col>
         </Grid>
+
+        <DateTimePicker
+          label="Requested Ready Time"
+          placeholder="Pick date and time"
+          value={formData.requestedReadyTime ? new Date(formData.requestedReadyTime) : null} // Ensure value is Date or null
+          onChange={(dateValue) => onFormDataChange('requestedReadyTime', dateValue as Date)} // Store as Date
+          leftSection={<CalendarDays size={16} />}
+          minDate={new Date()} // Prevent selecting past dates/times
+          valueFormat="YYYY-MM-DD HH:mm" // Display format
+        />
 
         <Textarea
           label="Notes"

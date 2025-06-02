@@ -8,3 +8,8 @@ export const formatTime = (timestamp: Date): string => {
 export const formatCurrency = (amount: number): string => {
   return `€${amount.toFixed(2)}`;
 };
+
+export const formatRequestedTime = (date?: Date): string => {
+  if (!date) return 'N/A';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
+};

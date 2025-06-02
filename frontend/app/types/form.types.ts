@@ -6,5 +6,6 @@ export interface OrderFormData {
   paymentMethod: PaymentMethod;
   source: OrderSource;
   notes: string;
-  items: OrderItem[]; // Keep items here for form state
+  items: OrderItem[];
+  requestedReadyTime?: Date | string;
 }
