@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import Optional
-from ..services.printer_service import PrinterService
+from services.printer_service import PrinterService
 import os
 import logging
 

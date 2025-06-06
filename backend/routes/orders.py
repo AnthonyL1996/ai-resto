@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from database import SessionLocal
 from models.order import Order
-from services.printer import PrinterService
+from services.printer_service import PrinterService
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
