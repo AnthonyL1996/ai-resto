@@ -1,0 +1,108 @@
+{
+  "navigation": {
+    "kitchen": "Kitchen Display",
+    "management": "Order Management",
+    "menu": "Menu Management"
+  },
+  "orders": {
+    "title": "All Orders",
+    "create": "Create Order",
+    "edit": "Edit Order",
+    "delete": "Delete Order",
+    "print": "Print Order",
+    "orderNumber": "Order #",
+    "customer": "Customer",
+    "items": "Items",
+    "total": "Total",
+    "status": "Status",
+    "source": "Source",
+    "time": "Time",
+    "requestedReadyTime": "Req. Ready Time",
+    "actions": "Actions",
+    "noOrders": "No orders to display.",
+    "deleteConfirm": {
+      "title": "Delete Order",
+      "message": "Are you sure you want to delete order",
+      "for": "for",
+      "cannotUndo": "This action cannot be undone.",
+      "confirm": "Delete Order",
+      "cancel": "Cancel"
+    }
+  },
+  "stats": {
+    "totalOrders": "Total Orders",
+    "activeOrders": "Active Orders",
+    "completedToday": "Completed Today",
+    "totalRevenue": "Total Revenue"
+  },
+  "status": {
+    "pending": "Pending",
+    "preparing": "Preparing",
+    "ready": "Ready",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "remove": "Remove",
+    "close": "Close",
+    "open": "Open",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "language": {
+    "select": "Select Language",
+    "english": "English",
+    "dutch": "Nederlands",
+    "french": "Français",
+    "cantonese": "廣東話"
+  },
+  "orderForm": {
+    "title": {
+      "create": "Create New Order",
+      "edit": "Edit Order"
+    },
+    "fields": {
+      "customerName": "Customer Name",
+      "customerNamePlaceholder": "Enter customer name",
+      "phoneNumber": "Phone Number",
+      "phoneNumberPlaceholder": "Enter phone number",
+      "paymentMethod": "Payment Method",
+      "orderSource": "Order Source",
+      "requestedReadyTime": "Requested Ready Time",
+      "requestedReadyTimePlaceholder": "Pick date and time",
+      "notes": "Notes",
+      "notesPlaceholder": "Special instructions or notes"
+    },
+    "paymentMethods": {
+      "card": "Card",
+      "cash": "Cash"
+    },
+    "sources": {
+      "manual": "Manual",
+      "kiosk": "Kiosk",
+      "website": "Website"
+    },
+    "sections": {
+      "menuItems": "Menu Items",
+      "orderItems": "Order Items"
+    },
+    "buttons": {
+      "addToOrder": "Add to Order",
+      "cancel": "Cancel",
+      "createOrder": "Create Order",
+      "updateOrder": "Update Order"
+    },
+    "pricing": {
+      "each": "each",
+      "total": "Total:"
+    }
+  }
+}

@@ -10,6 +10,8 @@ import {
 } from "react-router";
 
 import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
+import { ModalsProvider } from '@mantine/modals';
+import './i18n';
 
 import type { Route } from "./+types/root";
 
@@ -38,7 +40,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <MantineProvider>{children}</MantineProvider>
+        <MantineProvider>
+          <ModalsProvider>{children}</ModalsProvider>
+        </MantineProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

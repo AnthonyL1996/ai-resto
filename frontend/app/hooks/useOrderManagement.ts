@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Order, OrderStatus, OrderItem } from '../types/order.types';
 import type { OrderFormData } from '../types/form.types';
 import { orderService } from '../services/OrderService'; // Adjust path
-import { MENU_ITEMS } from '../config/constants'; // Adjust path
+import { menuItemService, type MenuItem } from '../services/MenuItemService'; // Adjust path
 import type { IOrderService } from '~/types/service.types';
 
 const initialOrderFormData: OrderFormData = {
@@ -23,6 +23,7 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [orderForm, setOrderForm] = useState<OrderFormData>(initialOrderFormData);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -39,7 +40,17 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
       }
     };
     fetchOrders();
+    loadMenuItems();
   }, [injectedOrderService]);
+
+  const loadMenuItems = async (language?: string) => {
+    try {
+      const items = await menuItemService.getMenuItems(undefined, language);
+      setMenuItems(items);
+    } catch (error) {
+      console.error('Failed to load menu items:', error);
+    }
+  };
 
   const refreshOrders = useCallback(async () => {
     try {
@@ -150,7 +161,7 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
 
   // Form item manipulations
   const addItemToForm = useCallback((menuItemName: string) => {
-    const menuItem = MENU_ITEMS.find(m => m.name === menuItemName);
+    const menuItem = menuItems.find(m => m.name === menuItemName);
     if (!menuItem) return;
 
     setOrderForm(prev => {
@@ -161,11 +172,22 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
           index === existingItemIndex ? { ...item, quantity: item.quantity + 1 } : item
         );
       } else {
-        newItems = [...prev.items, { name: menuItem.name, quantity: 1, modifications: [], price: menuItem.price }];
+        newItems = [...prev.items, { 
+          id: crypto.randomUUID(),
+          name: menuItem.name, 
+          quantity: 1, 
+          modifications: [], 
+          price: menuItem.price,
+          category: menuItem.category,
+          preparationTime: menuItem.prep_time,
+          dietaryOptions: [],
+          allergens: [],
+          available: menuItem.is_available
+        }];
       }
       return { ...prev, items: newItems };
     });
-  }, []);
+  }, [menuItems]);
 
   const removeItemFromForm = useCallback((index: number) => {
     setOrderForm(prev => ({
@@ -185,22 +207,30 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
     }));
   }, [removeItemFromForm]);
 
+  const calculateTotal = useCallback((items: OrderItem[]) => {
+    return items.reduce((total, item) => {
+      // Get current price from menu items in case it was updated
+      const currentMenuItem = menuItems.find(m => m.name === item.name);
+      const price = currentMenuItem ? currentMenuItem.price : item.price;
+      return total + (price * item.quantity);
+    }, 0);
+  }, [menuItems]);
 
   return {
     orders,
     isLoading,
     error,
-    activeOrders: orders.filter(o => o.status !== 'completed'),
-    completedOrders: orders.filter(o => o.status === 'completed'),
+    activeOrders: orders.filter(o => o.status !== 'Voltooid'),
+    completedOrders: orders.filter(o => o.status === 'Voltooid'),
     orderForm,
     setOrderForm, // Expose directly if needed for complex field updates
     isModalOpen,
     editingOrder,
     stats: {
         totalOrders: orders.length,
-        activeOrders: orders.filter(o => o.status !== 'completed').length,
-        completedToday: orders.filter(o => o.status === 'completed' /* && isToday(o.timestamp) */).length, // Add date check for "today"
-        totalRevenue: orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.total, 0)
+        activeOrders: orders.filter(o => o.status !== 'Voltooid').length,
+        completedToday: orders.filter(o => o.status === 'Voltooid' /* && isToday(o.timestamp) */).length, // Add date check for "today"
+        totalRevenue: orders.filter(o => o.status === 'Voltooid').reduce((sum, o) => sum + o.total, 0)
     },
     createOrder: handleCreateOrder,
     updateOrder: handleUpdateOrder,
@@ -209,6 +239,7 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
     addItemToOrderForm: addItemToForm,
     removeItemFromOrderForm: removeItemFromForm,
     updateItemQuantityInForm,
+    calculateTotal,
     startEditOrder: handleStartEditOrder,
     openCreateModal: handleOpenCreateModal,
     closeModal: handleCloseModal,

@@ -1,4 +1,4 @@
-import type { Order } from "~/types/order.types";
+import type { Order, OrderStatus } from "~/types/order.types";
 
 
 export const CUSTOMER_NAMES: readonly string[] = [
@@ -34,9 +34,36 @@ export const ORDER_SIMULATION_INTERVAL = 15000;
 export const ORDER_SIMULATION_PROBABILITY = 0.15;
 export const ALERT_DURATION = 3000;
 
-export const STATUS_COLOR_MAP: Record<Order['status'], string> = { // Example if you move status colors here
+type StatusColorMap = {
+  new: string;
+  preparing: string;
+  ready: string;
+  completed: string;
+};
+
+export const STATUS_COLOR_MAP: StatusColorMap = {
   new: 'red',
   preparing: 'yellow',
   ready: 'green',
   completed: 'gray'
 };
+
+export const SUPPORTED_LANGUAGES = ['nl', 'fr', 'de', 'en', 'zh'] as const;
+export const LANGUAGE_NAMES = {
+  nl: 'Nederlands',
+  fr: 'Français',
+  de: 'Deutsch',
+  en: 'English',
+  zh: '廣東話'
+};
+
+export const PRINTER_TYPES = {
+  KITCHEN: 'kitchen',
+  CUSTOMER: 'customer'
+};
+
+export const TIME_SLOTS = Array.from({length: 96}, (_, i) => {
+  const hours = Math.floor(i * 15 / 60);
+  const minutes = (i * 15) % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+});

@@ -1,0 +1,108 @@
+{
+  "navigation": {
+    "kitchen": "Affichage Cuisine",
+    "management": "Gestion des Commandes",
+    "menu": "Gestion du Menu"
+  },
+  "orders": {
+    "title": "Toutes les Commandes",
+    "create": "Créer une Commande",
+    "edit": "Modifier la Commande",
+    "delete": "Supprimer la Commande",
+    "print": "Imprimer la Commande",
+    "orderNumber": "Commande #",
+    "customer": "Client",
+    "items": "Articles",
+    "total": "Total",
+    "status": "Statut",
+    "source": "Source",
+    "time": "Heure",
+    "requestedReadyTime": "Heure Demandée",
+    "actions": "Actions",
+    "noOrders": "Aucune commande à afficher.",
+    "deleteConfirm": {
+      "title": "Supprimer la Commande",
+      "message": "Êtes-vous sûr de vouloir supprimer la commande",
+      "for": "pour",
+      "cannotUndo": "Cette action ne peut pas être annulée.",
+      "confirm": "Supprimer la Commande",
+      "cancel": "Annuler"
+    }
+  },
+  "stats": {
+    "totalOrders": "Total Commandes",
+    "activeOrders": "Commandes Actives",
+    "completedToday": "Terminées Aujourd'hui",
+    "totalRevenue": "Chiffre d'Affaires Total"
+  },
+  "status": {
+    "pending": "En Attente",
+    "preparing": "En Préparation",
+    "ready": "Prêt",
+    "completed": "Terminé",
+    "cancelled": "Annulé"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "remove": "Supprimer",
+    "close": "Fermer",
+    "open": "Ouvrir",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "language": {
+    "select": "Sélectionner la Langue",
+    "english": "English",
+    "dutch": "Nederlands",
+    "french": "Français",
+    "cantonese": "廣東話"
+  },
+  "orderForm": {
+    "title": {
+      "create": "Créer une Nouvelle Commande",
+      "edit": "Modifier la Commande"
+    },
+    "fields": {
+      "customerName": "Nom du Client",
+      "customerNamePlaceholder": "Entrez le nom du client",
+      "phoneNumber": "Numéro de Téléphone",
+      "phoneNumberPlaceholder": "Entrez le numéro de téléphone",
+      "paymentMethod": "Méthode de Paiement",
+      "orderSource": "Source de la Commande",
+      "requestedReadyTime": "Heure Demandée",
+      "requestedReadyTimePlaceholder": "Choisir date et heure",
+      "notes": "Notes",
+      "notesPlaceholder": "Instructions spéciales ou notes"
+    },
+    "paymentMethods": {
+      "card": "Carte",
+      "cash": "Espèces"
+    },
+    "sources": {
+      "manual": "Manuel",
+      "kiosk": "Kiosque",
+      "website": "Site Web"
+    },
+    "sections": {
+      "menuItems": "Articles du Menu",
+      "orderItems": "Articles de la Commande"
+    },
+    "buttons": {
+      "addToOrder": "Ajouter à la Commande",
+      "cancel": "Annuler",
+      "createOrder": "Créer la Commande",
+      "updateOrder": "Mettre à Jour la Commande"
+    },
+    "pricing": {
+      "each": "chacun",
+      "total": "Total:"
+    }
+  }
+}

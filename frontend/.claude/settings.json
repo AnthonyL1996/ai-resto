@@ -1,0 +1,22 @@
+{
+  "model": "claude-opus-4",
+  "systemPrompt": "You are a senior developer working on this React application",
+  "allowedTools": [
+    "Edit",
+    "View", 
+    "Bash(git:*)",
+    "Bash(npm:*)",
+  ],
+  "addDirs": ["../backend"],
+  "maxTurns": 20,
+  "context": {
+    "memoryFile": "CLAUDE.md",
+    "maxTokens": 128000,
+    "compressionEnabled": true
+  },
+  "automation": {
+    "preCommitCheck": true,
+    "autoFormat": true,
+    "testOnSave": false
+  }
+}

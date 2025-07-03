@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Stack, Grid, TextInput, Select, Textarea, Divider, Card, Button, Group, NumberInput, ActionIcon, Text, Box } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
-import { Save, Trash2, CalendarDays } from 'lucide-react';
-import type { OrderFormData } from '../../types/form.types'; // Use FormOrderItem if it differs
+import { Save, Trash2, CalendarDays, Plus, Minus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { OrderFormData } from '../../types/form.types';
 import type { OrderItem as FormOrderItem } from '../../types/order.types';
-import type { PaymentMethod, OrderSource, Order } from '../../types/order.types'; // Adjust path
-import { MENU_ITEMS } from '../../config/constants'; // Adjust path
-import { formatCurrency } from '../../utils/formatting'; // Adjust path
+import type { PaymentMethod, OrderSource, Order } from '../../types/order.types';
+import { formatCurrency } from '../../utils/formatting';
+import { menuItemService, type MenuItem } from '../../services/MenuItemService';
+import { useTranslation } from 'react-i18next';
 
 interface OrderFormModalProps {
   isOpen: boolean;
@@ -33,25 +35,73 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
   calculateTotal,
   editingOrder,
 }) => {
+  const { t, i18n } = useTranslation();
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+
+  useEffect(() => {
+    const loadMenuItems = async () => {
+      try {
+        // Map i18n language codes to API language codes
+        const langMap: Record<string, string> = {
+          'en': 'en',
+          'nl': 'nl', 
+          'fr': 'fr',
+          'zh': 'zh-HK',
+          'zh-HK': 'zh-HK'
+        };
+        
+        const currentLang = i18n.language;
+        const apiLangCode = langMap[currentLang] || currentLang;
+        
+        console.log('Loading menu items with language:', apiLangCode);
+        const items = await menuItemService.getMenuItems(undefined, apiLangCode);
+        setMenuItems(items.filter(item => item.is_available));
+      } catch (error) {
+        console.error('Failed to load menu items:', error);
+        // Fallback to default language
+        try {
+          const items = await menuItemService.getMenuItems();
+          setMenuItems(items.filter(item => item.is_available));
+        } catch (fallbackError) {
+          console.error('Failed to load menu items with fallback:', fallbackError);
+        }
+      }
+    };
+    
+    if (isOpen) {
+      loadMenuItems();
+    }
+  }, [isOpen, i18n.language]);
+
   return (
-    <Modal opened={isOpen} onClose={onClose} title={editingOrder ? "Edit Order" : "Create New Order"} size="lg">
-      <Stack>
+    <Modal opened={isOpen} onClose={onClose} title={editingOrder ? t('orderForm.title.edit') : t('orderForm.title.create')} size="xl" padding="xl">
+      <Stack gap="xl">
         <Grid>
           <Grid.Col span={{ base: 12, sm: 6 }}>
             <TextInput
-              label="Customer Name"
-              placeholder="Enter customer name"
+              label={t('orderForm.fields.customerName')}
+              placeholder={t('orderForm.fields.customerNamePlaceholder')}
               required
               value={formData.customerName}
               onChange={(e) => onFormDataChange('customerName', e.currentTarget.value)}
+              size="lg"
+              styles={{
+                input: { fontSize: '16px', minHeight: '48px' },
+                label: { fontSize: '14px', fontWeight: 600 }
+              }}
             />
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6 }}>
             <TextInput
-              label="Phone Number"
-              placeholder="Enter phone number"
+              label={t('orderForm.fields.phoneNumber')}
+              placeholder={t('orderForm.fields.phoneNumberPlaceholder')}
               value={formData.customerPhone}
               onChange={(e) => onFormDataChange('customerPhone', e.currentTarget.value)}
+              size="lg"
+              styles={{
+                input: { fontSize: '16px', minHeight: '48px' },
+                label: { fontSize: '14px', fontWeight: 600 }
+              }}
             />
           </Grid.Col>
         </Grid>
@@ -59,105 +109,204 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
         <Grid>
           <Grid.Col span={{ base: 12, sm: 6 }}>
             <Select
-              label="Payment Method"
+              label={t('orderForm.fields.paymentMethod')}
               required
               data={[
-                { value: 'card', label: 'Card' },
-                { value: 'cash', label: 'Cash' },
+                { value: 'card', label: t('orderForm.paymentMethods.card') },
+                { value: 'cash', label: t('orderForm.paymentMethods.cash') },
               ]}
               value={formData.paymentMethod}
               onChange={(value) => onFormDataChange('paymentMethod', (value as PaymentMethod) || 'card')}
+              size="lg"
+              styles={{
+                input: { fontSize: '16px', minHeight: '48px' },
+                label: { fontSize: '14px', fontWeight: 600 }
+              }}
             />
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6 }}>
             <Select
-              label="Order Source"
+              label={t('orderForm.fields.orderSource')}
               required
               data={[
-                { value: 'manual', label: 'Manual' },
-                { value: 'kiosk', label: 'Kiosk' },
-                { value: 'website', label: 'Website' },
+                { value: 'manual', label: t('orderForm.sources.manual') },
+                { value: 'kiosk', label: t('orderForm.sources.kiosk') },
+                { value: 'website', label: t('orderForm.sources.website') },
               ]}
               value={formData.source}
               onChange={(value) => onFormDataChange('source', (value as OrderSource) || 'manual')}
+              size="lg"
+              styles={{
+                input: { fontSize: '16px', minHeight: '48px' },
+                label: { fontSize: '14px', fontWeight: 600 }
+              }}
             />
           </Grid.Col>
         </Grid>
 
         <DateTimePicker
-          label="Requested Ready Time"
-          placeholder="Pick date and time"
-          value={formData.requestedReadyTime ? new Date(formData.requestedReadyTime) : null} // Ensure value is Date or null
-          onChange={(dateValue) => onFormDataChange('requestedReadyTime', dateValue as Date)} // Store as Date
-          leftSection={<CalendarDays size={16} />}
-          minDate={new Date()} // Prevent selecting past dates/times
-          valueFormat="YYYY-MM-DD HH:mm" // Display format
+          label={t('orderForm.fields.requestedReadyTime')}
+          placeholder={t('orderForm.fields.requestedReadyTimePlaceholder')}
+          value={formData.requestedReadyTime ? new Date(formData.requestedReadyTime) : null}
+          onChange={(dateValue) => onFormDataChange('requestedReadyTime', dateValue || null)}
+          leftSection={<CalendarDays size={20} />}
+          minDate={new Date()}
+          valueFormat="YYYY-MM-DD HH:mm"
+          size="lg"
+          styles={{
+            input: { fontSize: '16px', minHeight: '48px' },
+            label: { fontSize: '14px', fontWeight: 600 }
+          }}
         />
 
         <Textarea
-          label="Notes"
-          placeholder="Special instructions or notes"
+          label={t('orderForm.fields.notes')}
+          placeholder={t('orderForm.fields.notesPlaceholder')}
           value={formData.notes}
           onChange={(e) => onFormDataChange('notes', e.currentTarget.value)}
+          size="lg"
+          rows={3}
+          styles={{
+            input: { fontSize: '16px', minHeight: '80px' },
+            label: { fontSize: '14px', fontWeight: 600 }
+          }}
         />
 
-        <Divider label="Menu Items" labelPosition="center" />
+        <Divider label={t('orderForm.sections.menuItems')} labelPosition="center" styles={{ label: { fontSize: '16px', fontWeight: 600 } }} />
         <Grid>
-          {MENU_ITEMS.map((menuItem) => (
-            <Grid.Col key={menuItem.name} span={{ base: 6, sm: 4 }}>
-              <Card withBorder p="sm">
-                <Text fw={500} size="sm">{menuItem.name}</Text>
-                <Text size="xs" c="dimmed" mb="xs">{formatCurrency(menuItem.price)}</Text>
-                <Button size="xs" fullWidth onClick={() => onItemAdd(menuItem.name)}>
-                  Add to Order
+          {menuItems.map((menuItem) => (
+            <Grid.Col key={menuItem.id} span={{ base: 6, sm: 4 }}>
+              <Card 
+                withBorder 
+                p="lg" 
+                radius="md"
+                style={{ 
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  minHeight: '120px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}
+                onClick={() => onItemAdd(menuItem.name)}
+              >
+                <Box>
+                  <Text fw={600} size="md" mb="xs">{menuItem.name}</Text>
+                  <Text size="sm" c="dimmed" fw={500}>{formatCurrency(menuItem.price)}</Text>
+                  {menuItem.description && (
+                    <Text size="xs" c="dimmed" mt="xs">{menuItem.description}</Text>
+                  )}
+                </Box>
+                <Button 
+                  size="md" 
+                  fullWidth 
+                  leftSection={<Plus size={18} />}
+                  mt="md"
+                  styles={{
+                    root: { minHeight: '44px', fontSize: '14px' }
+                  }}
+                >
+                  {t('orderForm.buttons.addToOrder')}
                 </Button>
               </Card>
             </Grid.Col>
-          ))}
+          )) }
         </Grid>
 
         {formData.items.length > 0 && (
           <>
-            <Divider label="Order Items" labelPosition="center" />
-            <Stack>
+            <Divider label={t('orderForm.sections.orderItems')} labelPosition="center" styles={{ label: { fontSize: '16px', fontWeight: 600 } }} />
+            <Stack gap="md">
               {formData.items.map((item, idx) => (
-                <Group key={idx} justify="space-between" wrap="nowrap">
-                  <Box style={{ flexGrow: 1, minWidth: '100px' }}>
-                    <Text fw={500} truncate>{item.name}</Text>
-                    <Text size="sm" c="dimmed">{formatCurrency(item.price)} each</Text>
-                  </Box>
-                  <NumberInput
-                    value={item.quantity}
-                    onChange={(value) => onItemQuantityChange(idx, Number(value) || 0)}
-                    min={0} max={10} w={80} step={1} size="xs"
-                  />
-                  <Text fw={500} w={80} ta="right" size="sm">
-                    {formatCurrency(item.price * item.quantity)}
-                  </Text>
-                  <ActionIcon color="red" variant="light" onClick={() => onItemRemove(idx)} size="lg">
-                    <Trash2 size={16} />
-                  </ActionIcon>
-                </Group>
+                <Card key={idx} withBorder p="md" radius="md">
+                  <Group justify="space-between" wrap="nowrap" gap="md">
+                    <Box style={{ flexGrow: 1, minWidth: '120px' }}>
+                      <Text fw={600} size="md" truncate>{item.name}</Text>
+                      <Text size="sm" c="dimmed" fw={500}>{formatCurrency(item.price)} {t('orderForm.pricing.each')}</Text>
+                    </Box>
+                    
+                    <Group gap="xs" wrap="nowrap">
+                      <ActionIcon
+                        variant="light"
+                        size="lg"
+                        onClick={() => onItemQuantityChange(idx, Math.max(0, item.quantity - 1))}
+                        disabled={item.quantity <= 1}
+                        styles={{ root: { minWidth: '44px', minHeight: '44px' } }}
+                      >
+                        <Minus size={18} />
+                      </ActionIcon>
+                      
+                      <Box style={{ minWidth: '60px', textAlign: 'center' }}>
+                        <Text fw={600} size="lg" ta="center">{item.quantity}</Text>
+                      </Box>
+                      
+                      <ActionIcon
+                        variant="light"
+                        size="lg"
+                        onClick={() => onItemQuantityChange(idx, Math.min(10, item.quantity + 1))}
+                        disabled={item.quantity >= 10}
+                        styles={{ root: { minWidth: '44px', minHeight: '44px' } }}
+                      >
+                        <Plus size={18} />
+                      </ActionIcon>
+                    </Group>
+                    
+                    <Text fw={600} size="md" style={{ minWidth: '80px' }} ta="right">
+                      {formatCurrency(item.price * item.quantity)}
+                    </Text>
+                    
+                    <ActionIcon 
+                      color="red" 
+                      variant="light" 
+                      onClick={() => onItemRemove(idx)} 
+                      size="xl"
+                      styles={{ root: { minWidth: '48px', minHeight: '48px' } }}
+                    >
+                      <Trash2 size={20} />
+                    </ActionIcon>
+                  </Group>
+                </Card>
               ))}
-              <Divider />
-              <Group justify="space-between">
-                <Text fw={700} size="lg">Total:</Text>
-                <Text fw={700} size="lg">{formatCurrency(calculateTotal(formData.items))}</Text>
-              </Group>
+              
+              <Card withBorder p="lg" radius="md" style={{ backgroundColor: 'var(--mantine-color-gray-0)' }}>
+                <Group justify="space-between">
+                  <Text fw={700} size="xl">{t('orderForm.pricing.total')}</Text>
+                  <Text fw={700} size="xl" c="blue">{formatCurrency(calculateTotal(formData.items))}</Text>
+                </Group>
+              </Card>
             </Stack>
           </>
         )}
 
-        <Group justify="flex-end" mt="md">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
+        <Group justify="flex-end" mt="xl" gap="md">
+          <Button 
+            variant="outline" 
+            onClick={onClose}
+            size="lg"
+            styles={{
+              root: { 
+                minHeight: '52px',
+                fontSize: '16px',
+                minWidth: '120px'
+              }
+            }}
+          >
+            {t('orderForm.buttons.cancel')}
           </Button>
           <Button
-            leftSection={<Save size={16} />}
+            leftSection={<Save size={20} />}
             onClick={onSubmit}
             disabled={!formData.customerName || formData.items.length === 0}
+            size="lg"
+            styles={{
+              root: { 
+                minHeight: '52px',
+                fontSize: '16px',
+                minWidth: '160px'
+              }
+            }}
           >
-            {editingOrder ? 'Update Order' : 'Create Order'}
+            {editingOrder ? t('orderForm.buttons.updateOrder') : t('orderForm.buttons.createOrder')}
           </Button>
         </Group>
       </Stack>

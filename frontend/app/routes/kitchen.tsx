@@ -1,7 +1,8 @@
 // routes/kitchen.tsx
 import React, { useState, type JSX } from 'react'; // Removed useEffect for now, add back if simulation is re-added
 import { AppShell, Container, Tabs, Notification } from '@mantine/core';
-import { AlertCircle, ChefHat, ShoppingCart } from 'lucide-react';
+import { AlertCircle, ChefHat, ShoppingCart, Utensils } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Hooks
 import { useOrderManagement } from '../hooks/useOrderManagement'; 
@@ -12,10 +13,10 @@ import { AppHeader } from '../components/layout/AppHeader'; // Adjusted path
 import { OrderFormModal } from '../components/OrderFormModal/OrderFormModal'; // Adjusted path
 import { KitchenDisplayView } from '../features/KitchenDisplay/KitchenDisplayView'; // Adjusted path
 import { OrderManagementView } from '../features/OrderManagement/OrderManagementView'; // Adjusted path
+import { MenuManagement } from '../features/MenuManagement'; // Adjusted path
 
 // Services
-// Assuming orderService is exported as a singleton instance from its module
-import { orderService as defaultOrderService } from '../services/OrderService'; // Adjusted path
+import { orderService as defaultOrderService } from '../services/OrderServiceFactory'; // Factory chooses service
 import { ConsolePrintingService } from '../services/PrintService'; // Adjusted path
 
 // Types
@@ -26,6 +27,7 @@ const appPrintService = new ConsolePrintingService();
 
 export default function KitchenPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<string>('kitchen');
+  const { t } = useTranslation();
 
   const {
     orders,
@@ -115,13 +117,16 @@ export default function KitchenPage(): JSX.Element {
         )}
 
         <Container size="xl" mt="md">
-          <Tabs value={activeTab} onChange={setActiveTab}>
+          <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'kitchen')}>
             <Tabs.List>
               <Tabs.Tab value="kitchen" leftSection={<ChefHat size={16} />}>
-                Kitchen Display
+                {t('navigation.kitchen')}
               </Tabs.Tab>
               <Tabs.Tab value="management" leftSection={<ShoppingCart size={16} />}>
-                Order Management
+                {t('navigation.management')}
+              </Tabs.Tab>
+              <Tabs.Tab value="menu" leftSection={<Utensils size={16} />}>
+                {t('navigation.menu')}
               </Tabs.Tab>
             </Tabs.List>
 
@@ -143,6 +148,10 @@ export default function KitchenPage(): JSX.Element {
                 onDeleteOrder={deleteOrder}
                 onPrintOrder={handlePrintOrder}
               />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="menu" pt="md">
+              <MenuManagement />
             </Tabs.Panel>
           </Tabs>
         </Container>

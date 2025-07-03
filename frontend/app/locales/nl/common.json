@@ -1,0 +1,108 @@
+{
+  "navigation": {
+    "kitchen": "Keukendisplay",
+    "management": "Bestelbeheer",
+    "menu": "Menubeheer"
+  },
+  "orders": {
+    "title": "Alle Bestellingen",
+    "create": "Bestelling Aanmaken",
+    "edit": "Bestelling Bewerken",
+    "delete": "Bestelling Verwijderen",
+    "print": "Bestelling Afdrukken",
+    "orderNumber": "Bestelling #",
+    "customer": "Klant",
+    "items": "Items",
+    "total": "Totaal",
+    "status": "Status",
+    "source": "Bron",
+    "time": "Tijd",
+    "requestedReadyTime": "Gevraagde Klaartijd",
+    "actions": "Acties",
+    "noOrders": "Geen bestellingen om weer te geven.",
+    "deleteConfirm": {
+      "title": "Bestelling Verwijderen",
+      "message": "Weet je zeker dat je bestelling wilt verwijderen",
+      "for": "voor",
+      "cannotUndo": "Deze actie kan niet ongedaan worden gemaakt.",
+      "confirm": "Bestelling Verwijderen",
+      "cancel": "Annuleren"
+    }
+  },
+  "stats": {
+    "totalOrders": "Totaal Bestellingen",
+    "activeOrders": "Actieve Bestellingen",
+    "completedToday": "Vandaag Voltooid",
+    "totalRevenue": "Totale Omzet"
+  },
+  "status": {
+    "pending": "In Behandeling",
+    "preparing": "In Voorbereiding",
+    "ready": "Klaar",
+    "completed": "Voltooid",
+    "cancelled": "Geannuleerd"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Fout",
+    "success": "Succes",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "add": "Toevoegen",
+    "remove": "Verwijderen",
+    "close": "Sluiten",
+    "open": "Openen",
+    "yes": "Ja",
+    "no": "Nee"
+  },
+  "language": {
+    "select": "Selecteer Taal",
+    "english": "English",
+    "dutch": "Nederlands",
+    "french": "Français",
+    "cantonese": "廣東話"
+  },
+  "orderForm": {
+    "title": {
+      "create": "Nieuwe Bestelling Aanmaken",
+      "edit": "Bestelling Bewerken"
+    },
+    "fields": {
+      "customerName": "Klantnaam",
+      "customerNamePlaceholder": "Voer klantnaam in",
+      "phoneNumber": "Telefoonnummer",
+      "phoneNumberPlaceholder": "Voer telefoonnummer in",
+      "paymentMethod": "Betalingsmethode",
+      "orderSource": "Bestelbron",
+      "requestedReadyTime": "Gevraagde Klaartijd",
+      "requestedReadyTimePlaceholder": "Kies datum en tijd",
+      "notes": "Opmerkingen",
+      "notesPlaceholder": "Speciale instructies of opmerkingen"
+    },
+    "paymentMethods": {
+      "card": "Kaart",
+      "cash": "Contant"
+    },
+    "sources": {
+      "manual": "Handmatig",
+      "kiosk": "Kiosk",
+      "website": "Website"
+    },
+    "sections": {
+      "menuItems": "Menu Items",
+      "orderItems": "Bestelde Items"
+    },
+    "buttons": {
+      "addToOrder": "Toevoegen aan Bestelling",
+      "cancel": "Annuleren",
+      "createOrder": "Bestelling Aanmaken",
+      "updateOrder": "Bestelling Bijwerken"
+    },
+    "pricing": {
+      "each": "per stuk",
+      "total": "Totaal:"
+    }
+  }
+}

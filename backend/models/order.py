@@ -9,6 +9,8 @@ class Order(Base):
     id = Column(String, primary_key=True)
     customer_id = Column(String, ForeignKey("customers.id"), nullable=True)
     reservation_id = Column(String, ForeignKey("reservations.id"), nullable=True)
+    phone = Column(String, nullable=True)  # For anonymous orders
+    customer_name = Column(String, nullable=True)  # For anonymous orders
     status = Column(String, default="received")
     created_at = Column(DateTime, server_default='now()')
     items = Column(JSON)  # Stores list of menu items with quantities
@@ -17,6 +19,8 @@ class Order(Base):
     payment_provider = Column(String, default="payconiq")
     payment_reference = Column(String)
     time_slot = Column(DateTime, nullable=True)
+    source = Column(String, default="manual")  # manual, kiosk, website
+    notes = Column(String, nullable=True)
     print_status = Column(String, default="pending")
     print_attempts = Column(Integer, default=0)
     last_print_attempt = Column(DateTime, nullable=True)
