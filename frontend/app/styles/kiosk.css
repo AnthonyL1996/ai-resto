@@ -1,0 +1,99 @@
+/* Kiosk Tablet Styles */
+
+/* Disable text selection for kiosk interface */
+.kiosk-interface {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+  /* Disable text highlighting */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better touch targets for tablets */
+.kiosk-interface button,
+.kiosk-interface input,
+.kiosk-interface select {
+  min-height: 48px;
+  touch-action: manipulation;
+}
+
+/* Smooth scrolling for tablet */
+.kiosk-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Tablet-specific responsive breakpoints */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .kiosk-grid-item {
+    flex: 0 0 calc(33.333% - 20px);
+    max-width: calc(33.333% - 20px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .kiosk-grid-item {
+    flex: 0 0 calc(25% - 20px);
+    max-width: calc(25% - 20px);
+  }
+}
+
+/* Portrait tablet optimization */
+@media (orientation: portrait) and (min-width: 768px) {
+  .kiosk-grid-item {
+    flex: 0 0 calc(50% - 20px);
+    max-width: calc(50% - 20px);
+  }
+}
+
+/* Landscape tablet optimization */
+@media (orientation: landscape) and (min-width: 768px) {
+  .kiosk-grid-item {
+    flex: 0 0 calc(33.333% - 20px);
+    max-width: calc(33.333% - 20px);
+  }
+}
+
+/* Touch feedback animations */
+.kiosk-touch-feedback {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.kiosk-touch-feedback:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Large touch-friendly buttons */
+.kiosk-button-large {
+  min-height: 60px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 12px;
+  touch-action: manipulation;
+}
+
+/* Category filter buttons */
+.kiosk-category-button {
+  min-height: 50px;
+  min-width: 120px;
+  font-size: 16px;
+  border-radius: 25px;
+  touch-action: manipulation;
+}
+
+/* Cart sidebar for tablet */
+.kiosk-cart-sidebar {
+  width: 400px;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .kiosk-cart-sidebar {
+    width: 100%;
+    right: 0;
+  }
+}
