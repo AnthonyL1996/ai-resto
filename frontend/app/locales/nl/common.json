@@ -92,7 +92,8 @@
     },
     "sections": {
       "menuItems": "Menu Items",
-      "orderItems": "Bestelde Items"
+      "orderItems": "Bestelde Items",
+      "orderSummary": "Bestelling Overzicht"
     },
     "buttons": {
       "addToOrder": "Toevoegen aan Bestelling",
@@ -103,6 +104,9 @@
     "pricing": {
       "each": "per stuk",
       "total": "Totaal:"
+    },
+    "messages": {
+      "noItems": "Nog geen items toegevoegd. Klik op menu items om ze aan je bestelling toe te voegen."
     }
   }
 }

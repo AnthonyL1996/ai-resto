@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, JSON, Boolean
+from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, JSON, Boolean, text
 from sqlalchemy.orm import relationship
 from .base import Base
 from datetime import datetime
@@ -12,7 +12,7 @@ class Order(Base):
     phone = Column(String, nullable=True)  # For anonymous orders
     customer_name = Column(String, nullable=True)  # For anonymous orders
     status = Column(String, default="received")
-    created_at = Column(DateTime, server_default='now()')
+    created_at = Column(DateTime, server_default=text('now()'))
     items = Column(JSON)  # Stores list of menu items with quantities
     payment_method = Column(String, nullable=False)
     payment_status = Column(String, default="pending")

@@ -54,15 +54,37 @@ export class ApiOrderService implements IOrderService {
     };
   }
 
+  // Convert backend status to frontend status
+  private mapStatus(backendStatus: string): OrderStatus {
+    const statusMapping: { [key: string]: OrderStatus } = {
+      'new': 'Nieuw',
+      'received': 'Nieuw',
+      'preparing': 'In bereiding',
+      'ready': 'Klaar',
+      'completed': 'Voltooid',
+      'cancelled': 'Geannuleerd'
+    };
+    
+    return statusMapping[backendStatus] || 'Nieuw';
+  }
+
   // Convert backend ApiOrderResponse to frontend Order
   private fromApiOrder(apiOrder: ApiOrderResponse): Order {
     const items: OrderItem[] = (apiOrder.items || []).map(item => {
       const menuItem = MENU_ITEMS.find(m => m.name === item.item_id);
       return {
+        id: item.item_id,
         name: item.item_id,
         quantity: item.quantity,
         modifications: item.special_requests ? item.special_requests.split(', ') : [],
-        price: menuItem?.price || 10 // Use actual price from menu or default
+        price: menuItem?.price || 10, // Use actual price from menu or default
+        category: menuItem?.category || 'main',
+        preparationTime: menuItem?.prep_time || 15,
+        dietaryOptions: menuItem?.dietary_options || [],
+        allergens: menuItem?.allergens || [],
+        available: menuItem?.available || true,
+        imageUrl: menuItem?.imageUrl,
+        description: menuItem?.description
       };
     });
 
@@ -70,16 +92,19 @@ export class ApiOrderService implements IOrderService {
       id: apiOrder.order_id,
       orderNumber: parseInt(apiOrder.order_id.slice(-3)) || 1, // Extract number from ID
       timestamp: new Date(apiOrder.created_at),
-      status: apiOrder.status as OrderStatus,
+      status: this.mapStatus(apiOrder.status),
       customerName: apiOrder.customer_name || 'Unknown',
       customerPhone: apiOrder.phone,
       items,
       paymentMethod: apiOrder.payment_method as 'cash' | 'card',
+      orderType: 'pickup' as const, // Default to pickup
       total: this.calculateOrderTotal(items),
       estimatedTime: 15, // Default estimate
       source: apiOrder.source as 'manual' | 'kiosk' | 'website',
       notes: apiOrder.notes,
-      requestedReadyTime: apiOrder.time_slot ? new Date(apiOrder.time_slot) : undefined
+      requestedReadyTime: apiOrder.time_slot ? new Date(apiOrder.time_slot) : undefined,
+      btwPercentage: 21, // Default Belgian VAT
+      language: 'NL' as const // Default language
     };
   }
 
@@ -194,6 +219,19 @@ export class ApiOrderService implements IOrderService {
     }
   }
 
+  // Convert frontend status to backend status
+  private mapStatusToBackend(frontendStatus: OrderStatus): string {
+    const statusMapping: { [key in OrderStatus]: string } = {
+      'Nieuw': 'new',
+      'In bereiding': 'preparing',
+      'Klaar': 'ready',
+      'Voltooid': 'completed',
+      'Geannuleerd': 'cancelled'
+    };
+    
+    return statusMapping[frontendStatus] || 'new';
+  }
+
   async updateOrderStatus(orderId: string, newStatus: OrderStatus): Promise<Order | undefined> {
     try {
       const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.ORDERS}/${orderId}/status`, {
@@ -201,7 +239,7 @@ export class ApiOrderService implements IOrderService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: this.mapStatusToBackend(newStatus) }),
       });
 
       if (!response.ok) {

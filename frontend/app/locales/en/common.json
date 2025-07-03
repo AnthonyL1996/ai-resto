@@ -92,7 +92,8 @@
     },
     "sections": {
       "menuItems": "Menu Items",
-      "orderItems": "Order Items"
+      "orderItems": "Order Items",
+      "orderSummary": "Order Summary"
     },
     "buttons": {
       "addToOrder": "Add to Order",
@@ -103,6 +104,9 @@
     "pricing": {
       "each": "each",
       "total": "Total:"
+    },
+    "messages": {
+      "noItems": "No items added yet. Click on menu items to add them to your order."
     }
   }
 }

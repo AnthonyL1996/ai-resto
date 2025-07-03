@@ -160,12 +160,30 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
   }, [resetOrderForm]);
 
   // Form item manipulations
-  const addItemToForm = useCallback((menuItemName: string) => {
-    const menuItem = menuItems.find(m => m.name === menuItemName);
-    if (!menuItem) return;
+  const addItemToForm = useCallback(async (menuItemName: string) => {
+    // First try to find in current menuItems
+    let menuItem = menuItems.find(m => m.name === menuItemName);
+    
+    // If not found, try to fetch fresh menu items
+    if (!menuItem) {
+      try {
+        const freshMenuItems = await menuItemService.getMenuItems();
+        menuItem = freshMenuItems.find(m => m.name === menuItemName);
+        // Update the hook's menu items with fresh data
+        setMenuItems(freshMenuItems);
+      } catch (error) {
+        console.error('Failed to fetch menu items:', error);
+        return;
+      }
+    }
+    
+    if (!menuItem) {
+      console.error('Menu item not found:', menuItemName);
+      return;
+    }
 
     setOrderForm(prev => {
-      const existingItemIndex = prev.items.findIndex(item => item.name === menuItem.name);
+      const existingItemIndex = prev.items.findIndex(item => item.name === menuItem!.name);
       let newItems: OrderItem[];
       if (existingItemIndex >= 0) {
         newItems = prev.items.map((item, index) =>
@@ -174,15 +192,15 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
       } else {
         newItems = [...prev.items, { 
           id: crypto.randomUUID(),
-          name: menuItem.name, 
+          name: menuItem!.name, 
           quantity: 1, 
           modifications: [], 
-          price: menuItem.price,
-          category: menuItem.category,
-          preparationTime: menuItem.prep_time,
-          dietaryOptions: [],
-          allergens: [],
-          available: menuItem.is_available
+          price: menuItem!.price,
+          category: menuItem!.category,
+          preparationTime: menuItem!.prep_time,
+          dietaryOptions: menuItem!.dietary_options || [],
+          allergens: menuItem!.allergens || [],
+          available: menuItem!.is_available
         }];
       }
       return { ...prev, items: newItems };
@@ -229,8 +247,18 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
     stats: {
         totalOrders: orders.length,
         activeOrders: orders.filter(o => o.status !== 'Voltooid').length,
-        completedToday: orders.filter(o => o.status === 'Voltooid' /* && isToday(o.timestamp) */).length, // Add date check for "today"
-        totalRevenue: orders.filter(o => o.status === 'Voltooid').reduce((sum, o) => sum + o.total, 0)
+        completedToday: orders.filter(o => {
+          if (o.status !== 'Voltooid') return false;
+          const orderDate = new Date(o.timestamp);
+          const today = new Date();
+          return orderDate.toDateString() === today.toDateString();
+        }).length,
+        totalRevenue: orders.filter(o => {
+          if (o.status !== 'Voltooid') return false;
+          const orderDate = new Date(o.timestamp);
+          const today = new Date();
+          return orderDate.toDateString() === today.toDateString();
+        }).reduce((sum, o) => sum + o.total, 0)
     },
     createOrder: handleCreateOrder,
     updateOrder: handleUpdateOrder,

@@ -113,6 +113,8 @@ async def get_menu_items(
                 is_available=item.is_available,
                 image_url=item.image_url,
                 prep_time=item.prep_time,
+                allergens=item.allergens or [],
+                dietary_options=item.dietary_options or [],
                 translations=translations
             ))
         

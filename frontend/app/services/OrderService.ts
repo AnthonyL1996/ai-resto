@@ -54,7 +54,7 @@ export class LocalOrderService implements IOrderService {
       id: this.generateOrderId(),
       orderNumber: this.getNextOrderNumber(this.orders),
       timestamp: new Date(),
-      status: 'new',
+      status: 'Nieuw',
       customerName: formData.customerName,
       customerPhone: formData.customerPhone || undefined,
       items: items,

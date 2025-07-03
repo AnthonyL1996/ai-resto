@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Stack, Grid, TextInput, Select, Textarea, Divider, Card, Button, Group, NumberInput, ActionIcon, Text, Box } from '@mantine/core';
+import { Modal, Stack, Grid, TextInput, Select, Textarea, Divider, Card, Button, Group, NumberInput, ActionIcon, Text, Box, Badge } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { Save, Trash2, CalendarDays, Plus, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +8,6 @@ import type { OrderItem as FormOrderItem } from '../../types/order.types';
 import type { PaymentMethod, OrderSource, Order } from '../../types/order.types';
 import { formatCurrency } from '../../utils/formatting';
 import { menuItemService, type MenuItem } from '../../services/MenuItemService';
-import { useTranslation } from 'react-i18next';
 
 interface OrderFormModalProps {
   isOpen: boolean;
@@ -16,12 +15,34 @@ interface OrderFormModalProps {
   onSubmit: () => void; // The hook will handle create vs update
   formData: OrderFormData;
   onFormDataChange: <K extends keyof OrderFormData>(field: K, value: OrderFormData[K]) => void;
-  onItemAdd: (menuItemName: string) => void;
+  onItemAdd: (menuItemName: string) => void | Promise<void>;
   onItemRemove: (index: number) => void;
   onItemQuantityChange: (index: number, quantity: number) => void;
   calculateTotal: (items: FormOrderItem[]) => number;
   editingOrder: Order | null;
 }
+
+const getAllergenDisplayName = (allergen: string): string => {
+  const allergenMap: Record<string, string> = {
+    'gluten': 'Gluten',
+    'lactose': 'Lactose',
+    'nuts': 'Nuts',
+    'soy': 'Soy',
+    'egg': 'Egg',
+    'fish': 'Fish',
+    'shellfish': 'Shellfish'
+  };
+  return allergenMap[allergen] || allergen;
+};
+
+const getDietaryDisplayName = (option: string): string => {
+  const dietaryMap: Record<string, string> = {
+    'vegetarian': 'Vegetarian',
+    'vegan': 'Vegan',
+    'glutenFree': 'Gluten Free'
+  };
+  return dietaryMap[option] || option;
+};
 
 export const OrderFormModal: React.FC<OrderFormModalProps> = ({
   isOpen,
@@ -74,242 +95,364 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
   }, [isOpen, i18n.language]);
 
   return (
-    <Modal opened={isOpen} onClose={onClose} title={editingOrder ? t('orderForm.title.edit') : t('orderForm.title.create')} size="xl" padding="xl">
-      <Stack gap="xl">
-        <Grid>
-          <Grid.Col span={{ base: 12, sm: 6 }}>
-            <TextInput
-              label={t('orderForm.fields.customerName')}
-              placeholder={t('orderForm.fields.customerNamePlaceholder')}
-              required
-              value={formData.customerName}
-              onChange={(e) => onFormDataChange('customerName', e.currentTarget.value)}
-              size="lg"
-              styles={{
-                input: { fontSize: '16px', minHeight: '48px' },
-                label: { fontSize: '14px', fontWeight: 600 }
-              }}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6 }}>
-            <TextInput
-              label={t('orderForm.fields.phoneNumber')}
-              placeholder={t('orderForm.fields.phoneNumberPlaceholder')}
-              value={formData.customerPhone}
-              onChange={(e) => onFormDataChange('customerPhone', e.currentTarget.value)}
-              size="lg"
-              styles={{
-                input: { fontSize: '16px', minHeight: '48px' },
-                label: { fontSize: '14px', fontWeight: 600 }
-              }}
-            />
-          </Grid.Col>
-        </Grid>
-
-        <Grid>
-          <Grid.Col span={{ base: 12, sm: 6 }}>
-            <Select
-              label={t('orderForm.fields.paymentMethod')}
-              required
-              data={[
-                { value: 'card', label: t('orderForm.paymentMethods.card') },
-                { value: 'cash', label: t('orderForm.paymentMethods.cash') },
-              ]}
-              value={formData.paymentMethod}
-              onChange={(value) => onFormDataChange('paymentMethod', (value as PaymentMethod) || 'card')}
-              size="lg"
-              styles={{
-                input: { fontSize: '16px', minHeight: '48px' },
-                label: { fontSize: '14px', fontWeight: 600 }
-              }}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6 }}>
-            <Select
-              label={t('orderForm.fields.orderSource')}
-              required
-              data={[
-                { value: 'manual', label: t('orderForm.sources.manual') },
-                { value: 'kiosk', label: t('orderForm.sources.kiosk') },
-                { value: 'website', label: t('orderForm.sources.website') },
-              ]}
-              value={formData.source}
-              onChange={(value) => onFormDataChange('source', (value as OrderSource) || 'manual')}
-              size="lg"
-              styles={{
-                input: { fontSize: '16px', minHeight: '48px' },
-                label: { fontSize: '14px', fontWeight: 600 }
-              }}
-            />
-          </Grid.Col>
-        </Grid>
-
-        <DateTimePicker
-          label={t('orderForm.fields.requestedReadyTime')}
-          placeholder={t('orderForm.fields.requestedReadyTimePlaceholder')}
-          value={formData.requestedReadyTime ? new Date(formData.requestedReadyTime) : null}
-          onChange={(dateValue) => onFormDataChange('requestedReadyTime', dateValue || null)}
-          leftSection={<CalendarDays size={20} />}
-          minDate={new Date()}
-          valueFormat="YYYY-MM-DD HH:mm"
-          size="lg"
-          styles={{
-            input: { fontSize: '16px', minHeight: '48px' },
-            label: { fontSize: '14px', fontWeight: 600 }
-          }}
-        />
-
-        <Textarea
-          label={t('orderForm.fields.notes')}
-          placeholder={t('orderForm.fields.notesPlaceholder')}
-          value={formData.notes}
-          onChange={(e) => onFormDataChange('notes', e.currentTarget.value)}
-          size="lg"
-          rows={3}
-          styles={{
-            input: { fontSize: '16px', minHeight: '80px' },
-            label: { fontSize: '14px', fontWeight: 600 }
-          }}
-        />
-
-        <Divider label={t('orderForm.sections.menuItems')} labelPosition="center" styles={{ label: { fontSize: '16px', fontWeight: 600 } }} />
-        <Grid>
-          {menuItems.map((menuItem) => (
-            <Grid.Col key={menuItem.id} span={{ base: 6, sm: 4 }}>
-              <Card 
-                withBorder 
-                p="lg" 
-                radius="md"
-                style={{ 
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  minHeight: '120px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
-                }}
-                onClick={() => onItemAdd(menuItem.name)}
-              >
-                <Box>
-                  <Text fw={600} size="md" mb="xs">{menuItem.name}</Text>
-                  <Text size="sm" c="dimmed" fw={500}>{formatCurrency(menuItem.price)}</Text>
-                  {menuItem.description && (
-                    <Text size="xs" c="dimmed" mt="xs">{menuItem.description}</Text>
-                  )}
-                </Box>
-                <Button 
-                  size="md" 
-                  fullWidth 
-                  leftSection={<Plus size={18} />}
-                  mt="md"
+    <Modal 
+      opened={isOpen} 
+      onClose={onClose} 
+      title={editingOrder ? t('orderForm.title.edit') : t('orderForm.title.create')} 
+      size="100%" 
+      padding="xl"
+      styles={{
+        body: { 
+          height: 'calc(100vh - 180px)', 
+          maxHeight: 'calc(100vh - 180px)',
+          overflow: 'hidden', 
+          display: 'flex', 
+          flexDirection: 'column' 
+        },
+        content: {
+          height: '100vh',
+          maxHeight: '100vh'
+        },
+        header: {
+          padding: 'var(--mantine-spacing-xl)'
+        }
+      }}
+    >
+      <div style={{ 
+        display: 'flex', 
+        height: 'calc(100vh - 300px)', 
+        gap: 'var(--mantine-spacing-xl)',
+        flexDirection: 'row',
+        marginBottom: 'var(--mantine-spacing-md)'
+      }}>
+        {/* Left Column - Form Fields and Menu Items */}
+        <div style={{ flex: '2', overflowY: 'auto', paddingRight: 'var(--mantine-spacing-md)' }}>
+          <Stack gap="2xl">
+            <Grid>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label={t('orderForm.fields.customerName')}
+                  placeholder={t('orderForm.fields.customerNamePlaceholder')}
+                  required
+                  value={formData.customerName}
+                  onChange={(e) => onFormDataChange('customerName', e.currentTarget.value)}
+                  size="xl"
                   styles={{
-                    root: { minHeight: '44px', fontSize: '14px' }
+                    input: { fontSize: '18px', minHeight: '56px' },
+                    label: { fontSize: '16px', fontWeight: 600, marginBottom: '8px' }
                   }}
-                >
-                  {t('orderForm.buttons.addToOrder')}
-                </Button>
-              </Card>
-            </Grid.Col>
-          )) }
-        </Grid>
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label={t('orderForm.fields.phoneNumber')}
+                  placeholder={t('orderForm.fields.phoneNumberPlaceholder')}
+                  value={formData.customerPhone}
+                  onChange={(e) => onFormDataChange('customerPhone', e.currentTarget.value)}
+                  size="xl"
+                  styles={{
+                    input: { fontSize: '18px', minHeight: '56px' },
+                    label: { fontSize: '16px', fontWeight: 600, marginBottom: '8px' }
+                  }}
+                />
+              </Grid.Col>
+            </Grid>
 
-        {formData.items.length > 0 && (
-          <>
-            <Divider label={t('orderForm.sections.orderItems')} labelPosition="center" styles={{ label: { fontSize: '16px', fontWeight: 600 } }} />
-            <Stack gap="md">
-              {formData.items.map((item, idx) => (
-                <Card key={idx} withBorder p="md" radius="md">
-                  <Group justify="space-between" wrap="nowrap" gap="md">
-                    <Box style={{ flexGrow: 1, minWidth: '120px' }}>
-                      <Text fw={600} size="md" truncate>{item.name}</Text>
-                      <Text size="sm" c="dimmed" fw={500}>{formatCurrency(item.price)} {t('orderForm.pricing.each')}</Text>
+            <Grid>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Select
+                  label={t('orderForm.fields.paymentMethod')}
+                  required
+                  data={[
+                    { value: 'card', label: t('orderForm.paymentMethods.card') },
+                    { value: 'cash', label: t('orderForm.paymentMethods.cash') },
+                  ]}
+                  value={formData.paymentMethod}
+                  onChange={(value) => onFormDataChange('paymentMethod', (value as PaymentMethod) || 'card')}
+                  size="xl"
+                  styles={{
+                    input: { fontSize: '18px', minHeight: '56px' },
+                    label: { fontSize: '16px', fontWeight: 600, marginBottom: '8px' }
+                  }}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Select
+                  label={t('orderForm.fields.orderSource')}
+                  required
+                  data={[
+                    { value: 'manual', label: t('orderForm.sources.manual') },
+                    { value: 'kiosk', label: t('orderForm.sources.kiosk') },
+                    { value: 'website', label: t('orderForm.sources.website') },
+                  ]}
+                  value={formData.source}
+                  onChange={(value) => onFormDataChange('source', (value as OrderSource) || 'manual')}
+                  size="xl"
+                  styles={{
+                    input: { fontSize: '18px', minHeight: '56px' },
+                    label: { fontSize: '16px', fontWeight: 600, marginBottom: '8px' }
+                  }}
+                />
+              </Grid.Col>
+            </Grid>
+
+            <DateTimePicker
+              label={t('orderForm.fields.requestedReadyTime')}
+              placeholder={t('orderForm.fields.requestedReadyTimePlaceholder')}
+              value={formData.requestedReadyTime ? new Date(formData.requestedReadyTime) : null}
+              onChange={(dateValue) => onFormDataChange('requestedReadyTime', dateValue || undefined)}
+              leftSection={<CalendarDays size={20} />}
+              minDate={new Date()}
+              valueFormat="YYYY-MM-DD HH:mm"
+              size="xl"
+              styles={{
+                input: { fontSize: '18px', minHeight: '56px' },
+                label: { fontSize: '16px', fontWeight: 600, marginBottom: '8px' }
+              }}
+            />
+
+            <Textarea
+              label={t('orderForm.fields.notes')}
+              placeholder={t('orderForm.fields.notesPlaceholder')}
+              value={formData.notes}
+              onChange={(e) => onFormDataChange('notes', e.currentTarget.value)}
+              size="xl"
+              rows={4}
+              styles={{
+                input: { fontSize: '18px', minHeight: '100px' },
+                label: { fontSize: '16px', fontWeight: 600, marginBottom: '8px' }
+              }}
+            />
+
+            <Divider label={t('orderForm.sections.menuItems')} labelPosition="center" styles={{ label: { fontSize: '18px', fontWeight: 600 } }} />
+            <Grid gutter="lg">
+              {menuItems.map((menuItem) => (
+                <Grid.Col key={menuItem.id} span={{ base: 6, sm: 4, md: 3, lg: 3 }}>
+                  <Card 
+                    withBorder 
+                    p="xl" 
+                    radius="md"
+                    style={{ 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      minHeight: '160px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      height: '100%'
+                    }}
+                    onClick={() => onItemAdd(menuItem.name)}
+                  >
+                    <Box style={{ flex: 1 }}>
+                      <Text fw={600} size="lg" mb="sm" lineClamp={2}>{menuItem.name}</Text>
+                      <Text size="md" c="blue" fw={600} mb="xs">{formatCurrency(menuItem.price)}</Text>
+                      {menuItem.description && (
+                        <Text size="sm" c="dimmed" mt="xs" mb="sm" lineClamp={2}>{menuItem.description}</Text>
+                      )}
+                      
+                      {/* Allergen Information */}
+                      {(menuItem.allergens && menuItem.allergens.length > 0) && (
+                        <Box mb="sm">
+                          <Text size="xs" c="dimmed" mb="xs" fw={500}>⚠️ Contains:</Text>
+                          <Group gap="xs">
+                            {menuItem.allergens.map((allergen) => (
+                              <Badge 
+                                key={allergen} 
+                                size="sm" 
+                                color="red" 
+                                variant="filled"
+                                styles={{ 
+                                  root: { 
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    textTransform: 'capitalize'
+                                  } 
+                                }}
+                              >
+                                {getAllergenDisplayName(allergen)}
+                              </Badge>
+                            ))}
+                          </Group>
+                        </Box>
+                      )}
+                      
+                      {/* Dietary Options */}
+                      {(menuItem.dietary_options && menuItem.dietary_options.length > 0) && (
+                        <Box mb="sm">
+                          <Text size="xs" c="dimmed" mb="xs" fw={500}>🌱 Suitable for:</Text>
+                          <Group gap="xs">
+                            {menuItem.dietary_options.map((option) => (
+                              <Badge 
+                                key={option} 
+                                size="sm" 
+                                color="green" 
+                                variant="filled"
+                                styles={{ 
+                                  root: { 
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    textTransform: 'capitalize'
+                                  } 
+                                }}
+                              >
+                                {getDietaryDisplayName(option)}
+                              </Badge>
+                            ))}
+                          </Group>
+                        </Box>
+                      )}
                     </Box>
-                    
-                    <Group gap="xs" wrap="nowrap">
-                      <ActionIcon
-                        variant="light"
-                        size="lg"
-                        onClick={() => onItemQuantityChange(idx, Math.max(0, item.quantity - 1))}
-                        disabled={item.quantity <= 1}
-                        styles={{ root: { minWidth: '44px', minHeight: '44px' } }}
-                      >
-                        <Minus size={18} />
-                      </ActionIcon>
-                      
-                      <Box style={{ minWidth: '60px', textAlign: 'center' }}>
-                        <Text fw={600} size="lg" ta="center">{item.quantity}</Text>
-                      </Box>
-                      
-                      <ActionIcon
-                        variant="light"
-                        size="lg"
-                        onClick={() => onItemQuantityChange(idx, Math.min(10, item.quantity + 1))}
-                        disabled={item.quantity >= 10}
-                        styles={{ root: { minWidth: '44px', minHeight: '44px' } }}
-                      >
-                        <Plus size={18} />
-                      </ActionIcon>
-                    </Group>
-                    
-                    <Text fw={600} size="md" style={{ minWidth: '80px' }} ta="right">
-                      {formatCurrency(item.price * item.quantity)}
-                    </Text>
-                    
-                    <ActionIcon 
-                      color="red" 
-                      variant="light" 
-                      onClick={() => onItemRemove(idx)} 
-                      size="xl"
-                      styles={{ root: { minWidth: '48px', minHeight: '48px' } }}
+                    <Button 
+                      size="lg" 
+                      fullWidth 
+                      leftSection={<Plus size={20} />}
+                      mt="lg"
+                      variant="filled"
+                      styles={{
+                        root: { minHeight: '48px', fontSize: '16px' }
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onItemAdd(menuItem.name);
+                      }}
                     >
-                      <Trash2 size={20} />
-                    </ActionIcon>
-                  </Group>
-                </Card>
-              ))}
-              
-              <Card withBorder p="lg" radius="md" style={{ backgroundColor: 'var(--mantine-color-gray-0)' }}>
-                <Group justify="space-between">
-                  <Text fw={700} size="xl">{t('orderForm.pricing.total')}</Text>
-                  <Text fw={700} size="xl" c="blue">{formatCurrency(calculateTotal(formData.items))}</Text>
-                </Group>
-              </Card>
-            </Stack>
-          </>
-        )}
+                      {t('orderForm.buttons.addToOrder')}
+                    </Button>
+                  </Card>
+                </Grid.Col>
+              )) }
+            </Grid>
+          </Stack>
+        </div>
 
-        <Group justify="flex-end" mt="xl" gap="md">
-          <Button 
-            variant="outline" 
-            onClick={onClose}
-            size="lg"
-            styles={{
-              root: { 
-                minHeight: '52px',
-                fontSize: '16px',
-                minWidth: '120px'
-              }
-            }}
-          >
-            {t('orderForm.buttons.cancel')}
-          </Button>
-          <Button
-            leftSection={<Save size={20} />}
-            onClick={onSubmit}
-            disabled={!formData.customerName || formData.items.length === 0}
-            size="lg"
-            styles={{
-              root: { 
-                minHeight: '52px',
-                fontSize: '16px',
-                minWidth: '160px'
-              }
-            }}
-          >
-            {editingOrder ? t('orderForm.buttons.updateOrder') : t('orderForm.buttons.createOrder')}
-          </Button>
+        {/* Right Column - Order Summary (Always Visible) */}
+        <div 
+          style={{ 
+            flex: '0 0 400px', // Wider sidebar for full screen
+            backgroundColor: 'var(--mantine-color-gray-0)',
+            padding: 'var(--mantine-spacing-md)',
+            borderRadius: 'var(--mantine-radius-md)',
+            border: '1px solid var(--mantine-color-gray-3)',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden'
+          }}
+        >
+            <Stack gap="md" style={{ height: '100%' }}>
+              <Text fw={700} size="lg" ta="center">{t('orderForm.sections.orderSummary')}</Text>
+              
+              {formData.items.length === 0 ? (
+                <Box style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text ta="center" c="dimmed" size="sm">
+                    {t('orderForm.messages.noItems')}
+                  </Text>
+                </Box>
+              ) : (
+                <>
+                  <Box style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                    <Stack gap="xs">
+                      {formData.items.map((item, idx) => (
+                        <Card key={idx} withBorder p="sm" radius="sm">
+                          <Stack gap="xs">
+                            <Group justify="space-between" wrap="nowrap">
+                              <Text fw={600} size="sm" truncate style={{ maxWidth: '120px' }}>{item.name}</Text>
+                              <ActionIcon 
+                                color="red" 
+                                variant="light" 
+                                size="sm"
+                                onClick={() => onItemRemove(idx)} 
+                              >
+                                <Trash2 size={14} />
+                              </ActionIcon>
+                            </Group>
+                            
+                            <Group justify="space-between" wrap="nowrap">
+                              <Group gap="xs" wrap="nowrap">
+                                <ActionIcon
+                                  variant="light"
+                                  size="sm"
+                                  onClick={() => onItemQuantityChange(idx, Math.max(0, item.quantity - 1))}
+                                  disabled={item.quantity <= 1}
+                                >
+                                  <Minus size={14} />
+                                </ActionIcon>
+                                
+                                <Text fw={600} size="sm" style={{ minWidth: '20px', textAlign: 'center' }}>{item.quantity}</Text>
+                                
+                                <ActionIcon
+                                  variant="light"
+                                  size="sm"
+                                  onClick={() => onItemQuantityChange(idx, Math.min(10, item.quantity + 1))}
+                                  disabled={item.quantity >= 10}
+                                >
+                                  <Plus size={14} />
+                                </ActionIcon>
+                              </Group>
+                              
+                              <Text fw={600} size="sm">
+                                {formatCurrency(item.price * item.quantity)}
+                              </Text>
+                            </Group>
+                          </Stack>
+                        </Card>
+                      ))}
+                    </Stack>
+                  </Box>
+                  
+                  <Card withBorder p="md" radius="md" style={{ backgroundColor: 'var(--mantine-color-blue-0)', marginTop: 'auto' }}>
+                    <Group justify="space-between">
+                      <Text fw={700} size="lg">{t('orderForm.pricing.total')}</Text>
+                      <Text fw={700} size="lg" c="blue">{formatCurrency(calculateTotal(formData.items))}</Text>
+                    </Group>
+                  </Card>
+                </>
+              )}
+            </Stack>
+        </div>
+      </div>
+
+      {/* Bottom Action Buttons */}
+      <div style={{ 
+        flexShrink: 0, 
+        padding: 'var(--mantine-spacing-xl)', 
+        borderTop: '1px solid var(--mantine-color-gray-3)',
+        backgroundColor: 'white',
+        marginTop: 'auto',
+        minHeight: '100px'
+      }}>
+        <Group justify="flex-end" gap="md">
+        <Button 
+          variant="outline" 
+          onClick={onClose}
+          size="xl"
+          styles={{
+            root: { 
+              minHeight: '60px',
+              fontSize: '18px',
+              minWidth: '150px'
+            }
+          }}
+        >
+          {t('orderForm.buttons.cancel')}
+        </Button>
+        <Button
+          leftSection={<Save size={24} />}
+          onClick={onSubmit}
+          disabled={!formData.customerName || formData.items.length === 0}
+          size="xl"
+          styles={{
+            root: { 
+              minHeight: '60px',
+              fontSize: '18px',
+              minWidth: '200px'
+            }
+          }}
+        >
+          {editingOrder ? t('orderForm.buttons.updateOrder') : t('orderForm.buttons.createOrder')}
+        </Button>
         </Group>
-      </Stack>
+      </div>
     </Modal>
   );
 };

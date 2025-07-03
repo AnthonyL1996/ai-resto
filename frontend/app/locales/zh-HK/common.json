@@ -92,7 +92,8 @@
     },
     "sections": {
       "menuItems": "菜單項目",
-      "orderItems": "訂單項目"
+      "orderItems": "訂單項目",
+      "orderSummary": "訂單摘要"
     },
     "buttons": {
       "addToOrder": "加到訂單",
@@ -103,6 +104,9 @@
     "pricing": {
       "each": "每個",
       "total": "總計:"
+    },
+    "messages": {
+      "noItems": "還沒有添加項目。點擊菜單項目將它們添加到您的訂單中。"
     }
   }
 }

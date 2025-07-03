@@ -11,5 +11,5 @@ export const formatCurrency = (amount: number): string => {
 
 export const formatRequestedTime = (date?: Date): string => {
   if (!date) return 'N/A';
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };

@@ -15,6 +15,7 @@ import {
   Tabs
 } from '@mantine/core';
 import { FileInput, Image } from '@mantine/core';
+import { useTranslation } from 'react-i18next';
 import { PRINTER_TYPES } from '../config/constants';
 import { usePrintService } from '../hooks/usePrintService';
 import { categoryService, type MenuCategory } from '../services/CategoryService';
@@ -22,30 +23,56 @@ import { menuItemService, type MenuItem } from '../services/MenuItemService';
 import { translationService } from '../services/TranslationService';
 
 export function MenuManagement() {
+  const { t, i18n } = useTranslation();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [opened, setOpened] = useState(false);
   const [currentItem, setCurrentItem] = useState<Partial<MenuItem>>({});
   const [activeCategory, setActiveCategory] = useState<string | 'all'>('all');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [dutchCategories, setDutchCategories] = useState<MenuCategory[]>([]);
   const [categoryModalOpened, setCategoryModalOpened] = useState(false);
   const [currentCategory, setCurrentCategory] = useState<Partial<MenuCategory>>({});
   const [activeTranslationTab, setActiveTranslationTab] = useState<string>('nl');
   const [itemTranslations, setItemTranslations] = useState<Record<string, { name: string; description: string }>>({});
+  const [categoryTranslations, setCategoryTranslations] = useState<Record<string, { name: string; description: string }>>({});
   const { printTo } = usePrintService();
 
   useEffect(() => {
+    loadDutchCategories();
     loadCategories();
     loadMenuItems();
   }, []);
 
   useEffect(() => {
+    loadCategories();
+  }, [i18n.language]);
+
+  useEffect(() => {
     loadMenuItems();
-  }, [activeCategory]);
+  }, [activeCategory, i18n.language, categories, dutchCategories]);
+
+  const loadDutchCategories = async () => {
+    try {
+      const fetchedCategories = await categoryService.getCategories('nl');
+      setDutchCategories(fetchedCategories.filter(cat => cat.is_active));
+    } catch (error) {
+      console.error('Failed to load Dutch categories:', error);
+    }
+  };
 
   const loadCategories = async () => {
     try {
-      const fetchedCategories = await categoryService.getCategories();
+      const langMap: Record<string, string> = {
+        'en': 'en',
+        'nl': 'nl', 
+        'fr': 'fr',
+        'zh': 'zh-HK',
+        'zh-HK': 'zh-HK'
+      };
+      const currentLang = i18n.language;
+      const apiLangCode = langMap[currentLang] || currentLang;
+      const fetchedCategories = await categoryService.getCategories(apiLangCode);
       setCategories(fetchedCategories.filter(cat => cat.is_active));
     } catch (error) {
       console.error('Failed to load categories:', error);
@@ -54,8 +81,27 @@ export function MenuManagement() {
 
   const loadMenuItems = async () => {
     try {
-      const category = activeCategory === 'all' ? undefined : activeCategory;
-      const fetchedItems = await menuItemService.getMenuItems(category);
+      let categoryName = undefined;
+      if (activeCategory !== 'all') {
+        // activeCategory contains the translated category name
+        // Find the corresponding Dutch category name for API filtering
+        const translatedCategory = categories.find(cat => cat.name === activeCategory);
+        if (translatedCategory) {
+          const dutchCategory = dutchCategories.find(cat => cat.id === translatedCategory.id);
+          categoryName = dutchCategory?.name;
+        }
+      }
+      
+      const langMap: Record<string, string> = {
+        'en': 'en',
+        'nl': 'nl', 
+        'fr': 'fr',
+        'zh': 'zh-HK',
+        'zh-HK': 'zh-HK'
+      };
+      const currentLang = i18n.language;
+      const apiLangCode = langMap[currentLang] || currentLang;
+      const fetchedItems = await menuItemService.getMenuItems(categoryName, apiLangCode);
       setMenuItems(fetchedItems);
     } catch (error) {
       console.error('Failed to load menu items:', error);
@@ -63,6 +109,7 @@ export function MenuManagement() {
   };
 
   const filteredItems = menuItems;
+
 
   const handleSaveItem = async () => {
     try {
@@ -124,29 +171,48 @@ export function MenuManagement() {
 
   const handleSaveCategory = async () => {
     try {
+      let savedCategory: MenuCategory;
+      
       if (currentCategory.id) {
         // Update existing category
-        const updatedCategory = await categoryService.updateCategory(currentCategory.id, {
+        savedCategory = await categoryService.updateCategory(currentCategory.id, {
           name: currentCategory.name,
           display_order: currentCategory.display_order,
           is_active: currentCategory.is_active,
           color: currentCategory.color,
           description: currentCategory.description
         });
-        setCategories(categories.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat));
+        
+        // Update translations if needed
+        if (Object.keys(categoryTranslations).length > 0) {
+          await translationService.updateCategoryTranslations(currentCategory.id, categoryTranslations);
+        }
+        
+        setCategories(categories.map(cat => 
+          cat.id === savedCategory.id ? { ...savedCategory, translations: categoryTranslations } : cat
+        ));
       } else {
         // Create new category
-        const newCategory = await categoryService.createCategory({
+        savedCategory = await categoryService.createCategory({
           name: currentCategory.name || '',
           display_order: currentCategory.display_order || categories.length + 1,
           is_active: currentCategory.is_active ?? true,
           color: currentCategory.color || '#228be6',
           description: currentCategory.description
         });
-        setCategories([...categories, newCategory]);
+        
+        // Add translations for new category
+        if (Object.keys(categoryTranslations).length > 0) {
+          await translationService.updateCategoryTranslations(savedCategory.id, categoryTranslations);
+        }
+        
+        setCategories([...categories, { ...savedCategory, translations: categoryTranslations }]);
       }
+      
       setCategoryModalOpened(false);
       setCurrentCategory({});
+      setCategoryTranslations({});
+      setActiveTranslationTab('nl');
     } catch (error) {
       console.error('Failed to save category:', error);
     }
@@ -156,7 +222,8 @@ export function MenuManagement() {
     try {
       await categoryService.deleteCategory(categoryId);
       setCategories(categories.filter(cat => cat.id !== categoryId));
-      if (activeCategory === categories.find(cat => cat.id === categoryId)?.name) {
+      const deletedCategory = categories.find(cat => cat.id === categoryId);
+      if (activeCategory === deletedCategory?.name) {
         setActiveCategory('all');
       }
     } catch (error) {
@@ -406,6 +473,8 @@ export function MenuManagement() {
         onClose={() => {
           setCategoryModalOpened(false);
           setCurrentCategory({});
+          setCategoryTranslations({});
+          setActiveTranslationTab('nl');
         }}
         title="Manage Categories"
         size="lg"
@@ -454,7 +523,10 @@ export function MenuManagement() {
                   <Button 
                     size="xs" 
                     variant="light"
-                    onClick={() => setCurrentCategory(category)}
+                    onClick={() => {
+                      setCurrentCategory(category);
+                      setCategoryTranslations(category.translations || {});
+                    }}
                   >
                     Edit
                   </Button>
@@ -478,13 +550,75 @@ export function MenuManagement() {
           {currentCategory.id ? 'Edit Category' : 'Add New Category'}
         </Text>
         
-        <TextInput
-          label="Category Name"
-          value={currentCategory.name || ''}
-          onChange={(e) => setCurrentCategory({...currentCategory, name: e.target.value})}
-          mb="sm"
-          required
-        />
+        <Tabs value={activeTranslationTab} onChange={(value) => setActiveTranslationTab(value || 'nl')} mb="md">
+          <Tabs.List>
+            <Tabs.Tab value="nl">🇳🇱 Nederlands</Tabs.Tab>
+            <Tabs.Tab value="en">🇬🇧 English</Tabs.Tab>
+            <Tabs.Tab value="fr">🇫🇷 Français</Tabs.Tab>
+            <Tabs.Tab value="zh-HK">🇭🇰 中文</Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="nl">
+            <TextInput
+              label="Category Name (Nederlands)"
+              value={currentCategory.name || ''}
+              onChange={(e) => setCurrentCategory({...currentCategory, name: e.target.value})}
+              mb="sm"
+              required
+            />
+            <TextInput
+              label="Description (Nederlands)"
+              value={currentCategory.description || ''}
+              onChange={(e) => setCurrentCategory({...currentCategory, description: e.target.value})}
+              mb="sm"
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="en">
+            <TextInput
+              label="Category Name (English)"
+              value={categoryTranslations.en?.name || ''}
+              onChange={(e) => setCategoryTranslations({...categoryTranslations, en: {...(categoryTranslations.en || {}), name: e.target.value}})}
+              mb="sm"
+            />
+            <TextInput
+              label="Description (English)"
+              value={categoryTranslations.en?.description || ''}
+              onChange={(e) => setCategoryTranslations({...categoryTranslations, en: {...(categoryTranslations.en || {}), description: e.target.value}})}
+              mb="sm"
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="fr">
+            <TextInput
+              label="Category Name (Français)"
+              value={categoryTranslations.fr?.name || ''}
+              onChange={(e) => setCategoryTranslations({...categoryTranslations, fr: {...(categoryTranslations.fr || {}), name: e.target.value}})}
+              mb="sm"
+            />
+            <TextInput
+              label="Description (Français)"
+              value={categoryTranslations.fr?.description || ''}
+              onChange={(e) => setCategoryTranslations({...categoryTranslations, fr: {...(categoryTranslations.fr || {}), description: e.target.value}})}
+              mb="sm"
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="zh-HK">
+            <TextInput
+              label="Category Name (中文)"
+              value={categoryTranslations['zh-HK']?.name || ''}
+              onChange={(e) => setCategoryTranslations({...categoryTranslations, 'zh-HK': {...(categoryTranslations['zh-HK'] || {}), name: e.target.value}})}
+              mb="sm"
+            />
+            <TextInput
+              label="Description (中文)"
+              value={categoryTranslations['zh-HK']?.description || ''}
+              onChange={(e) => setCategoryTranslations({...categoryTranslations, 'zh-HK': {...(categoryTranslations['zh-HK'] || {}), description: e.target.value}})}
+              mb="sm"
+            />
+          </Tabs.Panel>
+        </Tabs>
         
         <TextInput
           label="Color"
@@ -500,13 +634,6 @@ export function MenuManagement() {
           onChange={(value) => setCurrentCategory({...currentCategory, display_order: Number(value)})}
           mb="sm"
           min={1}
-        />
-        
-        <TextInput
-          label="Description"
-          value={currentCategory.description || ''}
-          onChange={(e) => setCurrentCategory({...currentCategory, description: e.target.value})}
-          mb="sm"
         />
         
         <Button fullWidth onClick={handleSaveCategory} mt="md">

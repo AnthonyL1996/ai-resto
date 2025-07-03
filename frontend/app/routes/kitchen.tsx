@@ -1,6 +1,6 @@
 // routes/kitchen.tsx
 import React, { useState, type JSX } from 'react'; // Removed useEffect for now, add back if simulation is re-added
-import { AppShell, Container, Tabs, Notification } from '@mantine/core';
+import { AppShell, Container, Tabs, Notification, Stack, Button, Text } from '@mantine/core';
 import { AlertCircle, ChefHat, ShoppingCart, Utensils } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -128,6 +128,9 @@ export default function KitchenPage(): JSX.Element {
               <Tabs.Tab value="menu" leftSection={<Utensils size={16} />}>
                 {t('navigation.menu')}
               </Tabs.Tab>
+              <Tabs.Tab value="kiosk" leftSection={<Utensils size={16} />}>
+                Customer Kiosk
+              </Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="kitchen" pt="md">
@@ -153,6 +156,34 @@ export default function KitchenPage(): JSX.Element {
             <Tabs.Panel value="menu" pt="md">
               <MenuManagement />
             </Tabs.Panel>
+
+            <Tabs.Panel value="kiosk" pt="md">
+              <Container size="md" ta="center">
+                <Stack gap="xl">
+                  <Text size="xl" fw={600}>Customer Kiosk</Text>
+                  <Text c="dimmed">
+                    Open the customer-facing kiosk interface in a new window/tab for tablet use.
+                  </Text>
+                  <Button
+                    size="xl"
+                    component="a"
+                    href="/kiosk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    leftSection={<Utensils size={24} />}
+                    styles={{
+                      root: {
+                        minHeight: '80px',
+                        fontSize: '20px',
+                        minWidth: '300px'
+                      }
+                    }}
+                  >
+                    Launch Customer Kiosk
+                  </Button>
+                </Stack>
+              </Container>
+            </Tabs.Panel>
           </Tabs>
         </Container>
 
@@ -162,7 +193,7 @@ export default function KitchenPage(): JSX.Element {
           onSubmit={editingOrder ? updateOrder : handleCreateOrderAndNotify}
           formData={orderForm}
           onFormDataChange={(field, value) => setOrderForm(prev => ({ ...prev, [field]: value }))}
-          onItemAdd={addItemToOrderForm}
+          onItemAdd={(itemName) => addItemToOrderForm(itemName).catch(console.error)}
           onItemRemove={removeItemFromOrderForm}
           onItemQuantityChange={updateItemQuantityInForm}
           calculateTotal={defaultOrderService.calculateOrderTotal}

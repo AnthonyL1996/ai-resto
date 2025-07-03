@@ -92,7 +92,8 @@
     },
     "sections": {
       "menuItems": "Articles du Menu",
-      "orderItems": "Articles de la Commande"
+      "orderItems": "Articles de la Commande",
+      "orderSummary": "Résumé de la Commande"
     },
     "buttons": {
       "addToOrder": "Ajouter à la Commande",
@@ -103,6 +104,9 @@
     "pricing": {
       "each": "chacun",
       "total": "Total:"
+    },
+    "messages": {
+      "noItems": "Aucun article ajouté encore. Cliquez sur les éléments du menu pour les ajouter à votre commande."
     }
   }
 }

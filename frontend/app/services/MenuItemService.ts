@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/api';
+import type { Allergen, DietaryOption } from '../types/order.types';
 
 export interface MenuItem {
   id: string;
@@ -9,6 +10,8 @@ export interface MenuItem {
   is_available: boolean;
   image_url?: string;
   prep_time: number;
+  allergens?: Allergen[];
+  dietary_options?: DietaryOption[];
   translations?: Record<string, { name: string; description: string }>;
 }
 
@@ -20,6 +23,8 @@ export interface MenuItemCreate {
   is_available?: boolean;
   image_url?: string;
   prep_time?: number;
+  allergens?: Allergen[];
+  dietary_options?: DietaryOption[];
 }
 
 export interface MenuItemUpdate {
@@ -30,6 +35,8 @@ export interface MenuItemUpdate {
   is_available?: boolean;
   image_url?: string;
   prep_time?: number;
+  allergens?: Allergen[];
+  dietary_options?: DietaryOption[];
 }
 
 export class MenuItemService {
