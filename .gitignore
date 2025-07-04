@@ -1,0 +1,107 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Dependencies
+/frontend/node_modules/
+/backend/venv/
+/backend/__pycache__/
+/backend/**/__pycache__/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+/frontend/dist/
+/frontend/build/
+/frontend/.next/
+/frontend/out/
+
+# Database & Data
+/data/
+/backend/database.db
+/backend/*.db
+*.sqlite
+*.sqlite3
+
+# PostgreSQL data
+/data/postgres/
+
+# Logs
+*.log
+/backend/app.log
+/backend/logs/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Frontend specific
+.turbo
+.cache/
+.parcel-cache
+
+# Lock files (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
