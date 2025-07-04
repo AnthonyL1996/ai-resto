@@ -10,20 +10,23 @@ export class LocalOrderService implements IOrderService {
   private orders: Order[] = [ // Initial seed data can be passed or loaded
     // ... initial orders from your example
         {
-          id: 'ORD001', orderNumber: 1, timestamp: new Date(Date.now() - 5 * 60000), status: 'new',
+          id: 'ORD001', orderNumber: 1, timestamp: new Date(Date.now() - 5 * 60000), status: 'Nieuw',
           customerName: 'Jan Janssen', customerPhone: '+32 9 123 4567',
           items: [
-            { name: 'Chicken Curry', quantity: 2, modifications: ['Extra spicy', 'No mushrooms'], price: 12.50 },
-            { name: 'Nasi Goreng', quantity: 1, modifications: ['Vegetarian'], price: 9.50 },
-            { name: 'Spring Rolls', quantity: 3, modifications: [], price: 6.00 }
+            { id: 'item1', name: 'Chicken Curry', quantity: 2, modifications: ['Extra spicy', 'No mushrooms'], price: 12.50, category: 'Main', preparationTime: 15, dietaryOptions: [], allergens: [], available: true },
+            { id: 'item2', name: 'Nasi Goreng', quantity: 1, modifications: ['Vegetarian'], price: 9.50, category: 'Main', preparationTime: 12, dietaryOptions: ['vegetarian'], allergens: [], available: true },
+            { id: 'item3', name: 'Spring Rolls', quantity: 3, modifications: [], price: 6.00, category: 'Appetizer', preparationTime: 8, dietaryOptions: [], allergens: [], available: true }
           ],
           paymentMethod: 'card', total: 52.50, estimatedTime: 15, source: 'kiosk', notes: 'Customer is allergic to nuts',
           requestedReadyTime: new Date(Date.now() + 30 * 60000)
         },
         {
-          id: 'ORD002', orderNumber: 2, timestamp: new Date(Date.now() - 3 * 60000), status: 'preparing',
+          id: 'ORD002', orderNumber: 2, timestamp: new Date(Date.now() - 3 * 60000), status: 'In bereiding',
           customerName: 'Marie Dupont',
-          items: [ { name: 'Pad Thai', quantity: 1, modifications: ['No peanuts'], price: 10.50 }, { name: 'Tom Yum Soup', quantity: 2, modifications: ['Extra vegetables'], price: 7.50 } ],
+          items: [ 
+            { id: 'item4', name: 'Pad Thai', quantity: 1, modifications: ['No peanuts'], price: 10.50, category: 'Main', preparationTime: 10, dietaryOptions: [], allergens: ['peanuts'], available: true },
+            { id: 'item5', name: 'Tom Yum Soup', quantity: 2, modifications: ['Extra vegetables'], price: 7.50, category: 'Soup', preparationTime: 8, dietaryOptions: ['vegetarian'], allergens: [], available: true }
+          ],
           paymentMethod: 'cash', total: 25.50, estimatedTime: 10, source: 'website',
           requestedReadyTime: new Date(Date.now() + 45 * 60000)
         }

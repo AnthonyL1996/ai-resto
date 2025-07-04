@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, SessionLocal
 from models.base import Base
-from routes import orders, menu, auth, reservations, payments, kds, categories, translations
+from routes import orders, menu, auth, reservations, payments, kds, categories, translations, events
 from services.email import EmailService
 from utils.logger import setup_logger
 import logging
@@ -32,6 +32,7 @@ app.include_router(auth.router)
 app.include_router(reservations.router)
 app.include_router(payments.router)
 app.include_router(kds.router)
+app.include_router(events.router)
 # app.include_router(printer.router)
 
 if __name__ == "__main__":

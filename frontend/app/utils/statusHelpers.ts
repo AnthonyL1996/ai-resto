@@ -2,30 +2,33 @@ import type { OrderStatus } from '../types/order.types';
 
 export const getStatusColor = (status: OrderStatus): string => {
   const statusColorMap: Record<OrderStatus, string> = {
-    new: 'red',
-    preparing: 'yellow',
-    ready: 'green',
-    completed: 'gray'
+    'Nieuw': 'red',
+    'In bereiding': 'yellow',
+    'Klaar': 'green',
+    'Voltooid': 'gray',
+    'Geannuleerd': 'gray'
   };
-  return statusColorMap[status];
+  return statusColorMap[status] || 'gray';
 };
 
 export const getStatusText = (status: OrderStatus): string => {
   const statusTextMap: Record<OrderStatus, string> = {
-    new: 'New',
-    preparing: 'Preparing',
-    ready: 'Ready',
-    completed: 'Completed'
+    'Nieuw': 'New',
+    'In bereiding': 'Preparing',
+    'Klaar': 'Ready',
+    'Voltooid': 'Completed',
+    'Geannuleerd': 'Cancelled'
   };
-  return statusTextMap[status];
+  return statusTextMap[status] || status;
 };
 
 export const getNextStatus = (currentStatus: OrderStatus): OrderStatus | null => {
     const statusFlow: Record<OrderStatus, OrderStatus | null> = {
-        new: 'preparing',
-        preparing: 'ready',
-        ready: 'completed',
-        completed: null
+        'Nieuw': 'In bereiding',
+        'In bereiding': 'Klaar',
+        'Klaar': 'Voltooid',
+        'Voltooid': null,
+        'Geannuleerd': null
     };
     return statusFlow[currentStatus];
 };

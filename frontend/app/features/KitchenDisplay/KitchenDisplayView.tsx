@@ -18,6 +18,9 @@ export const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({
   onUpdateOrderStatus,
   onPrintOrder,
 }) => {
+  console.log('KitchenDisplayView - Active orders:', activeOrders);
+  console.log('KitchenDisplayView - Active orders count:', activeOrders.length);
+  
   return (
     <>
       <Grid>

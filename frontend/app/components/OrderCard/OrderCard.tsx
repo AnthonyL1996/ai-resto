@@ -13,17 +13,20 @@ export interface OrderCardProps {
 }
 
 export const OrderCard: React.FC<OrderCardProps> = ({ order, onStatusUpdate, onPrint }) => {
+  console.log('OrderCard - Order status:', order.status);
   const nextStatus = getNextStatus(order.status);
+  console.log('OrderCard - Next status:', nextStatus);
 
   const getActionButtonProps = (status: OrderStatus) => {
     const buttonConfig = {
-      new: { label: 'Start Cooking', icon: <ChefHat size={18} />, color: 'blue' },
-      preparing: { label: 'Mark Ready', icon: <Check size={18} />, color: 'green' },
-      ready: { label: 'Complete', icon: <Check size={18} />, color: 'gray' },
+      'Nieuw': { label: 'Start Cooking', icon: <ChefHat size={18} />, color: 'blue' },
+      'In bereiding': { label: 'Mark Ready', icon: <Check size={18} />, color: 'green' },
+      'Klaar': { label: 'Complete', icon: <Check size={18} />, color: 'gray' },
     };
     return buttonConfig[status as keyof typeof buttonConfig];
   };
   const actionButtonProps = nextStatus ? getActionButtonProps(order.status) : null;
+  console.log('OrderCard - Action button props:', actionButtonProps);
 
   return (
     <Card shadow="md" padding="lg" radius="md" withBorder

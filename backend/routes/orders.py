@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models.order import Order
 from services.printer_service import PrinterService
+from services.event_queue import publish_new_order
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -85,6 +86,26 @@ async def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     except Exception as e:
         # Log error but don't fail the order creation
         print(f"Print job failed: {e}")
+    
+    # Publish new order event to queue
+    order_data = {
+        "order_id": db_order.id,
+        "customer_id": db_order.customer_id,
+        "customer_name": db_order.customer_name,
+        "phone": db_order.phone,
+        "items": [item.dict() for item in order.items],
+        "payment_method": db_order.payment_method,
+        "time_slot": db_order.time_slot.isoformat() if db_order.time_slot else None,
+        "source": db_order.source,
+        "notes": db_order.notes,
+        "status": db_order.status,
+        "created_at": db_order.created_at.isoformat(),
+        "print_status": db_order.print_status,
+        "print_attempts": db_order.print_attempts
+    }
+    
+    # Publish to event queue for KDS real-time updates
+    publish_new_order(order_data)
     
     return {
         "order_id": db_order.id,

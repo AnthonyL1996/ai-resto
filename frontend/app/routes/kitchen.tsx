@@ -14,6 +14,7 @@ import { OrderFormModal } from '../components/OrderFormModal/OrderFormModal'; //
 import { KitchenDisplayView } from '../features/KitchenDisplay/KitchenDisplayView'; // Adjusted path
 import { OrderManagementView } from '../features/OrderManagement/OrderManagementView'; // Adjusted path
 import { MenuManagement } from '../features/MenuManagement'; // Adjusted path
+// import { KDSWebSocket } from '../components/KDSWebSocket';
 
 // Services
 import { orderService as defaultOrderService } from '../services/OrderServiceFactory'; // Factory chooses service
@@ -50,6 +51,7 @@ export default function KitchenPage(): JSX.Element {
     startEditOrder,
     openCreateModal,
     closeModal,
+    refreshOrders,
   } = useOrderManagement(defaultOrderService);
 
   const {
@@ -200,6 +202,7 @@ export default function KitchenPage(): JSX.Element {
           editingOrder={editingOrder}
         />
       </AppShell.Main>
+      
     </AppShell>
   );
 }

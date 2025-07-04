@@ -3,28 +3,12 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models.order import Order
 from services.email import EmailService
+from services.event_queue import publish_order_update
 import json
 from typing import List
 from datetime import datetime
 
 router = APIRouter(prefix="/kds", tags=["kds"])
-
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: dict):
-        for connection in self.active_connections:
-            await connection.send_text(json.dumps(message))
-
-manager = ConnectionManager()
 
 def get_db():
     db = SessionLocal()
@@ -59,12 +43,8 @@ async def update_order_status(
     order.status = status
     db.commit()
 
-    # Broadcast update to all connected clients
-    await manager.broadcast({
-        "type": "order_update",
-        "order_id": order.id,
-        "status": order.status
-    })
+    # Publish order update event to queue
+    publish_order_update(order.id, order.status)
 
     # Send status update email if customer has email
     if order.customer_email and status in ["ready", "completed"]:

@@ -4,6 +4,7 @@ import type { OrderFormData } from '../types/form.types';
 import { orderService } from '../services/OrderService'; // Adjust path
 import { menuItemService, type MenuItem } from '../services/MenuItemService'; // Adjust path
 import type { IOrderService } from '~/types/service.types';
+// import { useWebSocket } from './useWebSocket';
 
 const initialOrderFormData: OrderFormData = {
   customerName: '',
@@ -17,13 +18,16 @@ const initialOrderFormData: OrderFormData = {
 
 export function useOrderManagement(injectedOrderService: IOrderService = orderService) {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [orderForm, setOrderForm] = useState<OrderFormData>(initialOrderFormData);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+
+  // WebSocket will be added back separately to avoid blocking initial load
+  const isConnected = false;
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -244,6 +248,7 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
     setOrderForm, // Expose directly if needed for complex field updates
     isModalOpen,
     editingOrder,
+    isWebSocketConnected: isConnected,
     stats: {
         totalOrders: orders.length,
         activeOrders: orders.filter(o => o.status !== 'Voltooid').length,
