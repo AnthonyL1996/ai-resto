@@ -14,7 +14,6 @@ import { OrderFormModal } from '../components/OrderFormModal/OrderFormModal'; //
 import { KitchenDisplayView } from '../features/KitchenDisplay/KitchenDisplayView'; // Adjusted path
 import { OrderManagementView } from '../features/OrderManagement/OrderManagementView'; // Adjusted path
 import { MenuManagement } from '../features/MenuManagement'; // Adjusted path
-// import { KDSWebSocket } from '../components/KDSWebSocket';
 
 // Services
 import { orderService as defaultOrderService } from '../services/OrderServiceFactory'; // Factory chooses service
@@ -41,6 +40,10 @@ export default function KitchenPage(): JSX.Element {
     setOrderForm,
     isModalOpen,
     editingOrder,
+    isWebSocketConnected,
+    sseStatus,
+    sseConnect,
+    sseDisconnect,
     createOrder,
     updateOrder,
     deleteOrder,
@@ -141,6 +144,8 @@ export default function KitchenPage(): JSX.Element {
                 completedOrders={completedOrders}
                 onUpdateOrderStatus={updateOrderStatus}
                 onPrintOrder={handlePrintOrder}
+                sseConnectionStatus={sseStatus}
+                onSSEReconnect={sseConnect}
               />
             </Tabs.Panel>
 

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models.order import Order
 from services.email import EmailService
-from services.event_queue import publish_order_update
+from services.redis_event_service import redis_event_service
 import json
 from typing import List
 from datetime import datetime
@@ -43,8 +43,27 @@ async def update_order_status(
     order.status = status
     db.commit()
 
-    # Publish order update event to queue
-    publish_order_update(order.id, order.status)
+    # Publish to Redis for SSE real-time updates
+    try:
+        order_data = {
+            "id": order.id,
+            "customer_id": order.customer_id,
+            "customer_name": order.customer_name,
+            "phone": order.phone,
+            "items": order.items or [],
+            "payment_method": order.payment_method,
+            "time_slot": order.time_slot.isoformat() if order.time_slot else None,
+            "source": order.source or "manual",
+            "notes": order.notes,
+            "status": order.status,
+            "created_at": order.created_at.isoformat(),
+            "print_status": order.print_status or "pending",
+            "print_attempts": order.print_attempts or 0
+        }
+        await redis_event_service.publish_order_status_changed(order.id, order_data)
+    except Exception as e:
+        # Log error but don't fail the status update
+        print(f"Redis event publishing failed: {e}")
 
     # Send status update email if customer has email
     if order.customer_email and status in ["ready", "completed"]:

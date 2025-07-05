@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models.order import Order
 from services.printer_service import PrinterService
-from services.event_queue import publish_new_order
+from services.redis_event_service import redis_event_service
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -104,8 +104,12 @@ async def create_order(order: OrderCreate, db: Session = Depends(get_db)):
         "print_attempts": db_order.print_attempts
     }
     
-    # Publish to event queue for KDS real-time updates
-    publish_new_order(order_data)
+    # Publish to Redis for SSE real-time updates
+    try:
+        await redis_event_service.publish_order_created(order_data)
+    except Exception as e:
+        # Log error but don't fail the order creation
+        print(f"Redis event publishing failed: {e}")
     
     return {
         "order_id": db_order.id,
@@ -195,6 +199,28 @@ async def update_order(order_id: str, order_update: OrderUpdate, db: Session = D
     db.commit()
     db.refresh(order)
     
+    # Publish to Redis for SSE real-time updates
+    try:
+        order_data = {
+            "id": order.id,
+            "customer_id": order.customer_id,
+            "customer_name": order.customer_name,
+            "phone": order.phone,
+            "items": order.items or [],
+            "payment_method": order.payment_method,
+            "time_slot": order.time_slot.isoformat() if order.time_slot else None,
+            "source": order.source or "manual",
+            "notes": order.notes,
+            "status": order.status,
+            "created_at": order.created_at.isoformat(),
+            "print_status": order.print_status or "pending",
+            "print_attempts": order.print_attempts or 0
+        }
+        await redis_event_service.publish_order_status_changed(order.id, order_data)
+    except Exception as e:
+        # Log error but don't fail the order update
+        print(f"Redis event publishing failed: {e}")
+    
     return {
         "order_id": order.id,
         "customer_id": order.customer_id,
@@ -224,6 +250,28 @@ async def update_order_status(order_id: str, status_update: StatusUpdate, db: Se
     db.commit()
     db.refresh(order)
     
+    # Publish to Redis for SSE real-time updates
+    try:
+        order_data = {
+            "id": order.id,
+            "customer_id": order.customer_id,
+            "customer_name": order.customer_name,
+            "phone": order.phone,
+            "items": order.items or [],
+            "payment_method": order.payment_method,
+            "time_slot": order.time_slot.isoformat() if order.time_slot else None,
+            "source": order.source or "manual",
+            "notes": order.notes,
+            "status": order.status,
+            "created_at": order.created_at.isoformat(),
+            "print_status": order.print_status or "pending",
+            "print_attempts": order.print_attempts or 0
+        }
+        await redis_event_service.publish_order_status_changed(order.id, order_data)
+    except Exception as e:
+        # Log error but don't fail the status update
+        print(f"Redis event publishing failed: {e}")
+    
     return {
         "order_id": order.id,
         "customer_id": order.customer_id,
@@ -246,7 +294,31 @@ async def delete_order(order_id: str, db: Session = Depends(get_db)):
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
+    # Store order data before deletion for event publishing
+    order_data = {
+        "id": order.id,
+        "customer_id": order.customer_id,
+        "customer_name": order.customer_name,
+        "phone": order.phone,
+        "items": order.items or [],
+        "payment_method": order.payment_method,
+        "time_slot": order.time_slot.isoformat() if order.time_slot else None,
+        "source": order.source or "manual",
+        "notes": order.notes,
+        "status": order.status,
+        "created_at": order.created_at.isoformat(),
+        "print_status": order.print_status or "pending",
+        "print_attempts": order.print_attempts or 0
+    }
+    
     db.delete(order)
     db.commit()
+    
+    # Publish to Redis for SSE real-time updates
+    try:
+        await redis_event_service.publish_order_deleted(order_id, order_data)
+    except Exception as e:
+        # Log error but don't fail the delete operation
+        print(f"Redis event publishing failed: {e}")
     
     return {"message": "Order deleted successfully"}

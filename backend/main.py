@@ -2,10 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, SessionLocal
 from models.base import Base
-from routes import orders, menu, auth, reservations, payments, kds, categories, translations, events
+from routes import orders, menu, auth, reservations, payments, kds, categories, translations, sse
 from services.email import EmailService
+from services.redis_event_service import redis_event_service
 from utils.logger import setup_logger
 import logging
+import asyncio
 
 logger = setup_logger(__name__)
 
@@ -24,6 +26,19 @@ logger.info("Starting application")
 Base.metadata.create_all(bind=engine)
 logger.info("Database tables created")
 
+# Initialize Redis event service
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Initializing Redis event service")
+    await redis_event_service.connect()
+    logger.info("Redis event service initialized")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Shutting down Redis event service")
+    await redis_event_service.disconnect()
+    logger.info("Redis event service shut down")
+
 app.include_router(orders.router)
 app.include_router(menu.router)
 app.include_router(categories.router)
@@ -32,7 +47,7 @@ app.include_router(auth.router)
 app.include_router(reservations.router)
 app.include_router(payments.router)
 app.include_router(kds.router)
-app.include_router(events.router)
+app.include_router(sse.router)
 # app.include_router(printer.router)
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ import type { OrderFormData } from '../types/form.types';
 import { orderService } from '../services/OrderService'; // Adjust path
 import { menuItemService, type MenuItem } from '../services/MenuItemService'; // Adjust path
 import type { IOrderService } from '~/types/service.types';
-// import { useWebSocket } from './useWebSocket';
+import { useSSE } from './useSSE';
 
 const initialOrderFormData: OrderFormData = {
   customerName: '',
@@ -26,8 +26,48 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
   const [orderForm, setOrderForm] = useState<OrderFormData>(initialOrderFormData);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
 
-  // WebSocket will be added back separately to avoid blocking initial load
-  const isConnected = false;
+  // SSE integration for real-time order updates
+  const { status: sseStatus, connect, disconnect } = useSSE({
+    autoConnect: true,
+    onOrderCreated: useCallback((event) => {
+      console.log('SSE: New order created', event);
+      if (event.order_data) {
+        const newOrder = transformOrderData(event.order_data);
+        setOrders(prev => [newOrder, ...prev]);
+      }
+    }, []),
+    onOrderStatusChanged: useCallback((event) => {
+      console.log('SSE: Order status changed', event);
+      if (event.order_data) {
+        const updatedOrder = transformOrderData(event.order_data);
+        setOrders(prev => prev.map(o => o.id === event.order_id ? updatedOrder : o));
+      }
+    }, []),
+    onOrderDeleted: useCallback((event) => {
+      console.log('SSE: Order deleted', event);
+      if (event.order_id) {
+        setOrders(prev => prev.filter(o => o.id !== event.order_id));
+      }
+    }, []),
+    enableAudio: true
+  });
+
+  // Transform order data from SSE event to Order type
+  const transformOrderData = useCallback((orderData: any): Order => {
+    return {
+      id: orderData.id || orderData.order_id,
+      customerName: orderData.customer_name || '',
+      customerPhone: orderData.phone || '',
+      items: orderData.items || [],
+      paymentMethod: orderData.payment_method || 'card',
+      source: orderData.source || 'manual',
+      notes: orderData.notes || '',
+      status: orderData.status as OrderStatus || 'Nieuw',
+      timestamp: orderData.created_at || new Date().toISOString(),
+      total: orderData.items ? orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) : 0,
+      requestedReadyTime: orderData.time_slot ? new Date(orderData.time_slot) : undefined
+    };
+  }, []);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -248,7 +288,10 @@ export function useOrderManagement(injectedOrderService: IOrderService = orderSe
     setOrderForm, // Expose directly if needed for complex field updates
     isModalOpen,
     editingOrder,
-    isWebSocketConnected: isConnected,
+    isWebSocketConnected: sseStatus.connected,
+    sseStatus,
+    sseConnect: connect,
+    sseDisconnect: disconnect,
     stats: {
         totalOrders: orders.length,
         activeOrders: orders.filter(o => o.status !== 'Voltooid').length,
