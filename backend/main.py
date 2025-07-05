@@ -1,11 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, SessionLocal
 from models.base import Base
-from routes import orders, menu, auth, reservations, payments, kds, categories, translations, sse
+from routes import orders, menu, auth, reservations, payments, kds, categories, translations
 from services.email import EmailService
-from services.redis_event_service import redis_event_service
+from services.websocket_manager import manager
 from utils.logger import setup_logger
+from database_migration import run_migrations
 import logging
 import asyncio
 
@@ -26,18 +27,11 @@ logger.info("Starting application")
 Base.metadata.create_all(bind=engine)
 logger.info("Database tables created")
 
-# Initialize Redis event service
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Initializing Redis event service")
-    await redis_event_service.connect()
-    logger.info("Redis event service initialized")
+# Run database migrations
+logger.info("Running database migrations")
+run_migrations()
+logger.info("Database migrations completed")
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Shutting down Redis event service")
-    await redis_event_service.disconnect()
-    logger.info("Redis event service shut down")
 
 app.include_router(orders.router)
 app.include_router(menu.router)
@@ -47,8 +41,18 @@ app.include_router(auth.router)
 app.include_router(reservations.router)
 app.include_router(payments.router)
 app.include_router(kds.router)
-app.include_router(sse.router)
 # app.include_router(printer.router)
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            logger.info(f"Received WebSocket message: {data}")
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info("WebSocket client disconnected")
 
 if __name__ == "__main__":
     import uvicorn

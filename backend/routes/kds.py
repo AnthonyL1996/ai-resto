@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models.order import Order
+from models.menu import MenuItem
 from services.email import EmailService
-from services.redis_event_service import redis_event_service
+from services.websocket_manager import manager
 import json
 from typing import List
 from datetime import datetime
@@ -17,14 +18,10 @@ def get_db():
     finally:
         db.close()
 
-@router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+def get_order_number_for_existing_order(order_id: str) -> int:
+    """Get order number for existing orders (for updates/status changes)"""
+    return hash(order_id) % 10000
+
 
 @router.patch("/orders/{order_id}/status")
 async def update_order_status(
@@ -43,14 +40,40 @@ async def update_order_status(
     order.status = status
     db.commit()
 
-    # Publish to Redis for SSE real-time updates
+    # Process order data
     try:
+        # Enrich items from stored JSON data
+        enriched_items = []
+        total = 0
+        
+        if order.items:
+            for item_data in order.items:
+                if isinstance(item_data, dict):
+                    if 'name' in item_data and 'price' in item_data:
+                        enriched_items.append(item_data)
+                        total += float(item_data.get('price', 0)) * int(item_data.get('quantity', 1))
+                    else:
+                        menu_item = db.query(MenuItem).filter(MenuItem.id == item_data.get('item_id')).first()
+                        if menu_item:
+                            enriched_item = {
+                                "id": item_data.get('item_id'),
+                                "name": menu_item.name,
+                                "quantity": item_data.get('quantity', 1),
+                                "price": float(menu_item.price),
+                                "category": menu_item.category,
+                                "modifications": [item_data.get('special_requests')] if item_data.get('special_requests') else [],
+                            }
+                            enriched_items.append(enriched_item)
+                            total += float(menu_item.price) * int(item_data.get('quantity', 1))
+        
+        order_number = get_order_number_for_existing_order(order.id)
         order_data = {
             "id": order.id,
+            "order_number": order_number,
             "customer_id": order.customer_id,
             "customer_name": order.customer_name,
             "phone": order.phone,
-            "items": order.items or [],
+            "items": enriched_items,
             "payment_method": order.payment_method,
             "time_slot": order.time_slot.isoformat() if order.time_slot else None,
             "source": order.source or "manual",
@@ -58,12 +81,19 @@ async def update_order_status(
             "status": order.status,
             "created_at": order.created_at.isoformat(),
             "print_status": order.print_status or "pending",
-            "print_attempts": order.print_attempts or 0
+            "print_attempts": order.print_attempts or 0,
+            "total": total
         }
-        await redis_event_service.publish_order_status_changed(order.id, order_data)
+        
+        # Broadcast KDS status update to connected WebSocket clients
+        await manager.broadcast({
+            "type": "kds_status_update",
+            "data": order_data
+        })
+        
     except Exception as e:
         # Log error but don't fail the status update
-        print(f"Redis event publishing failed: {e}")
+        print(f"Order data processing failed: {e}")
 
     # Send status update email if customer has email
     if order.customer_email and status in ["ready", "completed"]:

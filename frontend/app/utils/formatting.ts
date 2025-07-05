@@ -1,6 +1,7 @@
-export const formatTime = (timestamp: Date): string => {
+export const formatTime = (timestamp: Date | string): string => {
   const now = new Date();
-  const diff = Math.floor((now.getTime() - timestamp.getTime()) / 1000 / 60);
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  const diff = Math.floor((now.getTime() - date.getTime()) / 1000 / 60);
   if (diff < 1) return 'Just now';
   return `${diff}m ago`;
 };

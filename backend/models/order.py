@@ -7,6 +7,7 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(String, primary_key=True)
+    order_number = Column(Integer, nullable=False, unique=True)  # Sequential order number for display
     customer_id = Column(String, ForeignKey("customers.id"), nullable=True)
     reservation_id = Column(String, ForeignKey("reservations.id"), nullable=True)
     phone = Column(String, nullable=True)  # For anonymous orders

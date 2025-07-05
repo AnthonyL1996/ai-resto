@@ -38,11 +38,11 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, onStatusUpdate, onP
         <Group justify="space-between" mb="md">
           <Group>
             <Avatar size="lg" radius="xl" color={getStatusColor(order.status)}>{/* Or theme color */}
-                #{order.orderNumber}
+                #{order.orderNumber || 'N/A'}
             </Avatar>
             <Box>
-              <Text fw={600} size="lg">Order #{order.orderNumber}</Text>
-              <Text size="sm" c="dimmed">{order.customerName}</Text>
+              <Text fw={600} size="lg">Order #{order.orderNumber || 'N/A'}</Text>
+              <Text size="sm" c="dimmed">{order.customerName || 'Unknown Customer'}</Text>
               {order.customerPhone && <Text size="xs" c="dimmed">{order.customerPhone}</Text>}
             </Box>
           </Group>
@@ -74,13 +74,13 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, onStatusUpdate, onP
         <Divider mb="md" />
 
         <Stack gap="xs" mb="md">
-          {order.items.map((item: OrderItem, idx: number) => (
-            <Box key={idx}>
+          {(order.items || []).map((item: OrderItem, idx: number) => (
+            <Box key={item.id || idx}>
               <Group justify="space-between">
-                <Text fw={500}>{item.quantity}x {item.name}</Text>
-                <Text size="sm" c="dimmed">{formatCurrency(item.price * item.quantity)}</Text>
+                <Text fw={500}>{(item.quantity || 1)}x {item.name || 'Unknown Item'}</Text>
+                <Text size="sm" c="dimmed">{formatCurrency((item.price || 0) * (item.quantity || 1))}</Text>
               </Group>
-              {item.modifications.length > 0 && (
+              {item.modifications && item.modifications.length > 0 && (
                 <Text size="sm" c="orange" fs="italic" pl="md">
                   • {item.modifications.join(', ')}
                 </Text>
@@ -96,7 +96,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, onStatusUpdate, onP
         )}
 
         <Group justify="space-between" mb="md">
-          <Text fw={600}>Total: {formatCurrency(order.total)}</Text>
+          <Text fw={600}>Total: {formatCurrency(order.total || 0)}</Text>
           <Badge variant="outline">{order.paymentMethod === 'card' ? 'Card' : 'Cash'}</Badge>
         </Group>
 

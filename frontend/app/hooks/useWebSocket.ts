@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { WebSocketService, WebSocketCallbacks, WebSocketMessage } from '../services/WebSocketService';
+import { WebSocketService, type WebSocketCallbacks, type WebSocketMessage } from '../services/WebSocketService';
 
 export interface UseWebSocketOptions {
   url?: string;
@@ -14,7 +14,7 @@ export interface UseWebSocketOptions {
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
   const {
-    url = 'ws://localhost:8000/kds/ws',
+    url = 'ws://localhost:8000/ws',
     autoConnect = true,
     onNewOrder,
     onOrderUpdate,
@@ -85,12 +85,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     };
   }, [url, autoConnect]);
 
-  // Update callbacks when they change
+  // Update callbacks when individual callback functions change
   useEffect(() => {
     if (wsRef.current) {
       wsRef.current.updateCallbacks(callbacks);
     }
-  }, [callbacks]);
+  }, [onNewOrder, onOrderUpdate, onMessage, onConnect, onDisconnect, onError]);
 
   const connect = useCallback(() => {
     if (wsRef.current) {

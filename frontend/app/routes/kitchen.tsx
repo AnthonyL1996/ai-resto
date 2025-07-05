@@ -19,9 +19,6 @@ import { MenuManagement } from '../features/MenuManagement'; // Adjusted path
 import { orderService as defaultOrderService } from '../services/OrderServiceFactory'; // Factory chooses service
 import { ConsolePrintingService } from '../services/PrintService'; // Adjusted path
 
-// Types
-// import type { Order } from '../src/types/order.types'; // Adjusted path - only if directly used here
-
 // Instantiate services if needed, or rely on default instances from hooks/services
 const appPrintService = new ConsolePrintingService();
 
@@ -40,10 +37,6 @@ export default function KitchenPage(): JSX.Element {
     setOrderForm,
     isModalOpen,
     editingOrder,
-    isWebSocketConnected,
-    sseStatus,
-    sseConnect,
-    sseDisconnect,
     createOrder,
     updateOrder,
     deleteOrder,
@@ -54,7 +47,6 @@ export default function KitchenPage(): JSX.Element {
     startEditOrder,
     openCreateModal,
     closeModal,
-    refreshOrders,
   } = useOrderManagement(defaultOrderService);
 
   const {
@@ -144,8 +136,6 @@ export default function KitchenPage(): JSX.Element {
                 completedOrders={completedOrders}
                 onUpdateOrderStatus={updateOrderStatus}
                 onPrintOrder={handlePrintOrder}
-                sseConnectionStatus={sseStatus}
-                onSSEReconnect={sseConnect}
               />
             </Tabs.Panel>
 

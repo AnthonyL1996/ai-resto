@@ -24,6 +24,7 @@ interface ApiOrderCreate {
 
 interface ApiOrderResponse {
   order_id: string;
+  order_number: number;
   customer_id?: string;
   customer_name?: string;
   phone?: string;
@@ -90,7 +91,7 @@ export class ApiOrderService implements IOrderService {
 
     return {
       id: apiOrder.order_id,
-      orderNumber: parseInt(apiOrder.order_id.slice(-3)) || 1, // Extract number from ID
+      orderNumber: apiOrder.order_number, // Use the actual order number from API
       timestamp: new Date(apiOrder.created_at),
       status: this.mapStatus(apiOrder.status),
       customerName: apiOrder.customer_name || 'Unknown',

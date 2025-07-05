@@ -41,3 +41,37 @@ export interface Order {
   btwPercentage: number;
   language: 'NL' | 'FR' | 'DE' | 'EN' | 'Cantonese';
 }
+
+// Backend order data types (from WebSocket messages)
+export interface BackendOrderItem {
+  id: string;
+  item_id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  category: string;
+  modifications: string[];
+  preparationTime: number;
+  dietaryOptions: DietaryOption[];
+  allergens: Allergen[];
+  available: boolean;
+}
+
+export interface BackendOrderData {
+  id: string;
+  order_id: string;
+  order_number: number;
+  customer_id?: string;
+  customer_name: string;
+  phone?: string;
+  items: BackendOrderItem[];
+  payment_method: string;
+  time_slot?: string;
+  source: string;
+  notes?: string;
+  status: string;
+  created_at: string;
+  print_status: string;
+  print_attempts: number;
+  total: number;
+}
