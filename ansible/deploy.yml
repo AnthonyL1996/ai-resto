@@ -1,0 +1,123 @@
+---
+# Deployment playbook for application updates
+# This handles rolling updates without full infrastructure rebuild
+
+- name: Deploy application updates
+  hosts: webservers
+  become: yes
+  serial: 1  # Deploy to one server at a time (rolling deployment)
+  max_fail_percentage: 0  # Stop deployment if any server fails
+
+  vars:
+    healthcheck_retries: 5
+    healthcheck_delay: 10
+
+  pre_tasks:
+    - name: Check if application is healthy before deployment
+      uri:
+        url: "{{ healthcheck_url }}"
+        status_code: 200
+      register: pre_health
+      retries: 3
+      delay: 5
+      failed_when: false
+
+    - name: Display pre-deployment health status
+      debug:
+        msg: "Pre-deployment health: {{ 'HEALTHY' if pre_health.status == 200 else 'UNHEALTHY' }}"
+
+  tasks:
+    - name: Pull latest code from repository
+      git:
+        repo: "{{ git_repo }}"
+        dest: "{{ app_home }}"
+        version: "{{ git_branch }}"
+        force: yes
+      become_user: "{{ app_user }}"
+      register: git_pull
+
+    - name: Display git changes
+      debug:
+        msg: "Git pull result: {{ 'Updated' if git_pull.changed else 'No changes' }}"
+
+    - name: Install/update Python dependencies
+      pip:
+        requirements: "{{ app_home }}/backend/requirements.txt"
+        virtualenv: "{{ virtualenv_path }}"
+        virtualenv_python: python{{ python_version }}
+      when: git_pull.changed
+
+    - name: Run database migrations
+      command: "{{ virtualenv_path }}/bin/alembic upgrade head"
+      args:
+        chdir: "{{ app_home }}/backend"
+      environment:
+        DATABASE_URL: "{{ database_url }}"
+        SECRET_KEY: "{{ secret_key }}"
+        REDIS_URL: "{{ redis_url }}"
+        SKIP_SETTINGS_VALIDATION: "true"
+      become_user: "{{ app_user }}"
+      register: migration_result
+      changed_when: "'Running upgrade' in migration_result.stdout"
+
+    - name: Display migration status
+      debug:
+        msg: "{{ migration_result.stdout_lines }}"
+
+    - name: Restart application service
+      systemd:
+        name: "{{ app_name }}"
+        state: restarted
+        daemon_reload: yes
+      when: git_pull.changed or migration_result.changed
+
+    - name: Wait for application to start
+      wait_for:
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 60
+
+    - name: Verify application health after deployment
+      uri:
+        url: "{{ healthcheck_url }}"
+        status_code: 200
+      register: post_health
+      retries: "{{ healthcheck_retries }}"
+      delay: "{{ healthcheck_delay }}"
+      until: post_health.status == 200
+
+  post_tasks:
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "✅ Deployment completed for {{ inventory_hostname }}"
+          - "Git Version: {{ git_pull.after | default('N/A') }}"
+          - "Migrations: {{ 'Applied' if migration_result.changed else 'None' }}"
+          - "Health Status: {{ 'HEALTHY' if post_health.status == 200 else 'UNHEALTHY' }}"
+
+- name: Reload Nginx configuration
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Reload Nginx to pick up any changes
+      systemd:
+        name: nginx
+        state: reloaded
+
+- name: Final verification
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Verify all applications are responding
+      uri:
+        url: "https://{{ domain_name }}/health"
+        status_code: 200
+        validate_certs: "{{ use_ssl }}"
+      register: final_health
+
+    - name: Display final status
+      debug:
+        msg:
+          - "🎉 Deployment completed successfully across all servers!"
+          - "All health checks passed"
+          - "Application URL: https://{{ domain_name }}"

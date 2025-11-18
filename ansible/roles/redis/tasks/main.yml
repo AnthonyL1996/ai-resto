@@ -1,0 +1,82 @@
+---
+# Redis role - Caching server setup
+
+- name: Add Redis APT key
+  apt_key:
+    url: https://packages.redis.io/gpg
+    state: present
+
+- name: Add Redis repository
+  apt_repository:
+    repo: "deb https://packages.redis.io/deb {{ ansible_distribution_release }} main"
+    state: present
+    filename: redis
+
+- name: Install Redis
+  apt:
+    name:
+      - redis-server
+      - redis-tools
+    state: present
+    update_cache: yes
+
+- name: Configure Redis
+  template:
+    src: redis.conf.j2
+    dest: /etc/redis/redis.conf
+    owner: redis
+    group: redis
+    mode: '0640'
+  notify: restart redis
+
+- name: Configure Redis systemd service
+  template:
+    src: redis.service.j2
+    dest: /etc/systemd/system/redis.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart redis
+
+- name: Ensure Redis is started and enabled
+  service:
+    name: redis
+    state: started
+    enabled: yes
+
+- name: Create Redis data directory
+  file:
+    path: /var/lib/redis
+    state: directory
+    owner: redis
+    group: redis
+    mode: '0750'
+
+- name: Configure Redis persistence
+  lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^save', line: 'save 900 1' }
+    - { regexp: '^save', line: 'save 300 10' }
+    - { regexp: '^save', line: 'save 60 10000' }
+  notify: restart redis
+
+- name: Allow Redis through firewall
+  ufw:
+    rule: allow
+    port: "{{ redis_port | default('6379') }}"
+    proto: tcp
+    from_ip: "{{ item }}"
+  loop: "{{ groups['webservers'] | map('extract', hostvars, 'ansible_host') | list }}"
+  when: enable_firewall | default(true)
+
+- name: Install Redis monitoring script
+  copy:
+    dest: /usr/local/bin/redis-healthcheck.sh
+    content: |
+      #!/bin/bash
+      redis-cli -h localhost -p {{ redis_port | default('6379') }} ping | grep -q PONG
+      exit $?
+    mode: '0755'

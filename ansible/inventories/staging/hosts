@@ -1,0 +1,35 @@
+# AI Resto Staging Inventory
+# Update with your actual server IPs/hostnames
+
+[webservers]
+web1.staging.airestaurant.com ansible_host=192.168.2.10
+
+[dbservers]
+db1.staging.airestaurant.com ansible_host=192.168.2.20
+
+[redis]
+redis1.staging.airestaurant.com ansible_host=192.168.2.30
+
+# Group all servers
+[staging:children]
+webservers
+dbservers
+redis
+
+# Group variables
+[staging:vars]
+ansible_user=deploy
+ansible_python_interpreter=/usr/bin/python3
+deployment_environment=staging
+
+[webservers:vars]
+app_port=8000
+workers=2
+
+[dbservers:vars]
+postgres_version=17
+postgres_port=5432
+
+[redis:vars]
+redis_port=6379
+redis_maxmemory=128mb

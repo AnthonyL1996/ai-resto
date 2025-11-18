@@ -1,0 +1,40 @@
+---
+# Example Ansible Vault file
+# This shows the structure of secrets you should encrypt
+#
+# DO NOT commit actual secrets!
+#
+# To create your encrypted vault:
+# 1. Copy this file: cp vault.yml.example production/vault.yml
+# 2. Edit with your real values
+# 3. Encrypt it: ansible-vault encrypt production/vault.yml
+#
+# Or create directly encrypted:
+# ansible-vault create production/vault.yml
+
+# Database password
+vault_db_password: "CHANGE_THIS_TO_STRONG_DATABASE_PASSWORD"
+
+# Application secret key (generate with: python -c 'import secrets; print(secrets.token_urlsafe(32))')
+vault_secret_key: "CHANGE_THIS_TO_SECURE_SECRET_KEY_AT_LEAST_32_CHARS"
+
+# Redis password (optional, but recommended for production)
+vault_redis_password: "CHANGE_THIS_TO_REDIS_PASSWORD"
+
+# Payment gateway credentials
+vault_payconiq_api_key: "your_payconiq_api_key_here"
+vault_payconiq_webhook_secret: "your_payconiq_webhook_secret_here"
+
+# SMTP credentials for email
+vault_smtp_username: "your_smtp_username"
+vault_smtp_password: "your_smtp_password"
+
+# Optional: Database connection URL (if you want to encrypt the entire URL)
+vault_database_url: "postgresql://restaurant:PASSWORD@db-server:5432/restaurant_db"
+
+# Optional: Redis connection URL
+vault_redis_url: "redis://:PASSWORD@cache-server:6379/0"
+
+# Reference these in your group_vars/production.yml like:
+# db_password: "{{ vault_db_password }}"
+# secret_key: "{{ vault_secret_key }}"

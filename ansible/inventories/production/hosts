@@ -1,0 +1,39 @@
+# AI Resto Production Inventory
+# Update with your actual server IPs/hostnames
+
+[webservers]
+web1.production.airestaurant.com ansible_host=192.168.1.10
+# web2.production.airestaurant.com ansible_host=192.168.1.11  # Add for load balancing
+
+[dbservers]
+db1.production.airestaurant.com ansible_host=192.168.1.20
+
+[redis]
+redis1.production.airestaurant.com ansible_host=192.168.1.30
+
+[loadbalancers]
+# lb1.production.airestaurant.com ansible_host=192.168.1.5  # Optional
+
+# Group all servers
+[production:children]
+webservers
+dbservers
+redis
+
+# Group variables can be set here or in group_vars/
+[production:vars]
+ansible_user=deploy
+ansible_python_interpreter=/usr/bin/python3
+deployment_environment=production
+
+[webservers:vars]
+app_port=8000
+workers=4
+
+[dbservers:vars]
+postgres_version=17
+postgres_port=5432
+
+[redis:vars]
+redis_port=6379
+redis_maxmemory=256mb

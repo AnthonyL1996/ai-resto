@@ -1,0 +1,16 @@
+---
+# Backend role handlers
+
+- name: restart airest
+  systemd:
+    name: airest
+    state: restarted
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: reload airest
+  systemd:
+    name: airest
+    state: reloaded

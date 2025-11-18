@@ -1,0 +1,40 @@
+# Custom PostgreSQL Configuration
+# Tuned for AI Resto Application
+
+# Connection Settings
+max_connections = 100
+superuser_reserved_connections = 3
+
+# Memory Settings
+shared_buffers = 256MB
+effective_cache_size = 1GB
+work_mem = 16MB
+maintenance_work_mem = 64MB
+
+# WAL Settings
+wal_buffers = 16MB
+checkpoint_completion_target = 0.9
+max_wal_size = 1GB
+min_wal_size = 80MB
+
+# Query Tuning
+random_page_cost = 1.1
+effective_io_concurrency = 200
+default_statistics_target = 100
+
+# Logging
+logging_collector = on
+log_directory = 'log'
+log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+log_rotation_age = 1d
+log_rotation_size = 100MB
+log_min_duration_statement = 1000  # Log queries slower than 1 second
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_lock_waits = on
+log_statement = 'ddl'
+
+# Performance
+shared_preload_libraries = 'pg_stat_statements'

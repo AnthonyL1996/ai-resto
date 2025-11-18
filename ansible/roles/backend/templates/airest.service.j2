@@ -1,0 +1,39 @@
+[Unit]
+Description=AI Resto Backend API
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=notify
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_home }}/current/backend
+Environment="PATH={{ virtualenv_path }}/bin"
+ExecStart={{ virtualenv_path }}/bin/gunicorn \
+    -k uvicorn.workers.UvicornWorker \
+    -w {{ app_workers }} \
+    -b 127.0.0.1:{{ app_port }} \
+    --timeout {{ app_timeout }} \
+    --access-logfile {{ app_home }}/shared/logs/access.log \
+    --error-logfile {{ app_home }}/shared/logs/error.log \
+    --log-level {{ log_level | lower }} \
+    main:app
+
+# Restart policy
+Restart={{ systemd_restart_policy | default('on-failure') }}
+RestartSec={{ systemd_restart_sec | default('10') }}
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ app_home }}
+ReadOnlyPaths=/
+
+# Process limits
+LimitNOFILE=65536
+LimitNPROC=65536
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,90 @@
+---
+# Production Environment Variables
+
+# Application
+app_name: ai-resto
+app_user: airest
+app_group: airest
+app_home: /opt/{{ app_name }}
+app_port: 8000
+app_workers: 4
+app_timeout: 120
+
+# Repository
+git_repo: https://github.com/AnthonyL1996/ai-resto.git
+git_branch: main
+git_version: HEAD  # Can be a tag, branch, or commit hash
+
+# Python
+python_version: "3.10"
+virtualenv_path: "{{ app_home }}/venv"
+
+# Database
+db_name: restaurant_db
+db_user: restaurant
+db_host: "{{ groups['dbservers'][0] }}"  # Use first DB server
+db_port: 5432
+# db_password: Set in vault or environment
+
+# Redis
+redis_host: "{{ groups['redis'][0] }}"  # Use first Redis server
+redis_port: 6379
+redis_db: 0
+
+# Domain and SSL
+domain_name: api.airestaurant.com
+use_ssl: true
+ssl_email: admin@airestaurant.com
+
+# Frontend (if deploying separately)
+frontend_domain: app.airestaurant.com
+
+# Nginx
+nginx_worker_processes: auto
+nginx_worker_connections: 1024
+nginx_client_max_body_size: 10M
+
+# Security
+allowed_hosts:
+  - "{{ domain_name }}"
+  - "{{ frontend_domain }}"
+
+cors_allowed_origins:
+  - "https://{{ frontend_domain }}"
+  - "https://www.{{ frontend_domain }}"
+
+# Monitoring
+enable_monitoring: true
+log_level: INFO
+
+# Backup
+backup_enabled: true
+backup_retention_days: 30
+
+# Rate Limiting
+rate_limit_enabled: true
+rate_limit_per_minute: 60
+
+# Email (for notifications)
+smtp_server: smtp.gmail.com
+smtp_port: 587
+# smtp_user: Set in vault
+# smtp_password: Set in vault
+sender_email: noreply@airestaurant.com
+
+# Deployment
+deploy_strategy: rolling  # rolling, blue_green, canary
+healthcheck_url: "http://localhost:{{ app_port }}/health"
+healthcheck_retries: 5
+healthcheck_delay: 10
+
+# Systemd
+systemd_restart_policy: on-failure
+systemd_restart_sec: 10
+
+# Firewall
+enable_firewall: true
+allowed_ports:
+  - 22    # SSH
+  - 80    # HTTP
+  - 443   # HTTPS

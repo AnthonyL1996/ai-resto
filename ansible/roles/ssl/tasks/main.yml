@@ -1,0 +1,33 @@
+---
+# SSL role - Let's Encrypt certificates
+
+- name: Install certbot
+  apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+    update_cache: yes
+
+- name: Check if certificate already exists
+  stat:
+    path: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
+  register: cert_exists
+
+- name: Obtain SSL certificate
+  command: >
+    certbot certonly --nginx
+    --non-interactive
+    --agree-tos
+    --email {{ ssl_email }}
+    -d {{ domain_name }}
+  when: not cert_exists.stat.exists and use_ssl | default(false)
+  notify: reload nginx
+
+- name: Set up certificate auto-renewal
+  cron:
+    name: "Renew Let's Encrypt certificates"
+    minute: "0"
+    hour: "2"
+    job: "certbot renew --quiet --post-hook 'systemctl reload nginx'"
+  when: use_ssl | default(false)

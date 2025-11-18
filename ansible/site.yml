@@ -1,0 +1,50 @@
+---
+# Main playbook for complete AI Resto deployment
+# This sets up everything from scratch on bare metal servers
+
+- name: Configure all servers with common setup
+  hosts: production
+  become: yes
+  roles:
+    - common
+
+- name: Setup PostgreSQL database servers
+  hosts: dbservers
+  become: yes
+  roles:
+    - postgresql
+
+- name: Setup Redis cache servers
+  hosts: redis
+  become: yes
+  roles:
+    - redis
+
+- name: Deploy backend application
+  hosts: webservers
+  become: yes
+  roles:
+    - backend
+    - nginx
+    - ssl
+
+- name: Final verification
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Check application health
+      uri:
+        url: "https://{{ domain_name }}/health"
+        status_code: 200
+        validate_certs: yes
+      register: health_check
+      retries: 3
+      delay: 5
+
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "✅ Deployment completed successfully!"
+          - "API URL: https://{{ domain_name }}"
+          - "Health Check: {{ health_check.status }}"
+          - "Backend Version: {{ git_version }}"

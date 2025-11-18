@@ -1,0 +1,7 @@
+---
+# SSL role handlers
+
+- name: reload nginx
+  service:
+    name: nginx
+    state: reloaded

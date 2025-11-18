@@ -1,0 +1,98 @@
+---
+# Backend role - Application deployment
+
+- name: Create application user
+  user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    system: yes
+    create_home: yes
+    home: "{{ app_home }}"
+    shell: /bin/bash
+
+- name: Create application directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  loop:
+    - "{{ app_home }}"
+    - "{{ app_home }}/releases"
+    - "{{ app_home }}/shared"
+    - "{{ app_home }}/shared/logs"
+
+- name: Clone/update application code
+  git:
+    repo: "{{ git_repo }}"
+    dest: "{{ app_home }}/releases/{{ ansible_date_time.epoch }}"
+    version: "{{ git_version }}"
+    force: yes
+  become_user: "{{ app_user }}"
+  register: git_clone
+
+- name: Create symlink to current release
+  file:
+    src: "{{ app_home }}/releases/{{ ansible_date_time.epoch }}"
+    dest: "{{ app_home }}/current"
+    state: link
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+  when: git_clone.changed
+
+- name: Install Python dependencies in virtualenv
+  pip:
+    requirements: "{{ app_home }}/current/backend/requirements.txt"
+    virtualenv: "{{ virtualenv_path }}"
+    virtualenv_command: python3 -m venv
+  become_user: "{{ app_user }}"
+
+- name: Create .env file from template
+  template:
+    src: env.j2
+    dest: "{{ app_home }}/current/backend/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0600'
+  notify: restart airest
+
+- name: Run database migrations
+  command: "{{ virtualenv_path }}/bin/alembic upgrade head"
+  args:
+    chdir: "{{ app_home }}/current/backend"
+  become_user: "{{ app_user }}"
+  when: git_clone.changed
+  register: migration_result
+  failed_when: migration_result.rc != 0
+
+- name: Install systemd service
+  template:
+    src: airest.service.j2
+    dest: /etc/systemd/system/airest.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart airest
+
+- name: Enable and start application service
+  systemd:
+    name: airest
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Wait for application to be ready
+  uri:
+    url: "{{ healthcheck_url }}"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: "{{ healthcheck_retries | default(5) }}"
+  delay: "{{ healthcheck_delay | default(10) }}"
+
+- name: Clean up old releases (keep last 5)
+  shell: "ls -1t {{ app_home }}/releases | tail -n +6 | xargs -I {} rm -rf {{ app_home }}/releases/{}"
+  become_user: "{{ app_user }}"
+  when: git_clone.changed
+  ignore_errors: yes

@@ -1,0 +1,136 @@
+---
+# Rollback playbook for reverting failed deployments
+# Usage: ansible-playbook -i inventories/production rollback.yml -e "rollback_version=<git-commit-hash>"
+
+- name: Rollback application deployment
+  hosts: webservers
+  become: yes
+  serial: 1  # Rollback one server at a time
+
+  vars:
+    healthcheck_retries: 5
+    healthcheck_delay: 10
+
+  pre_tasks:
+    - name: Verify rollback_version is specified
+      fail:
+        msg: "You must specify rollback_version: ansible-playbook rollback.yml -e 'rollback_version=abc123'"
+      when: rollback_version is not defined
+
+    - name: Display rollback information
+      debug:
+        msg:
+          - "⚠️  ROLLBACK INITIATED"
+          - "Target version: {{ rollback_version }}"
+          - "Server: {{ inventory_hostname }}"
+
+    - name: Confirm rollback
+      pause:
+        prompt: "Press ENTER to continue rollback or Ctrl+C to abort"
+      when: rollback_confirm | default(true) | bool
+      run_once: yes
+
+  tasks:
+    - name: Stop application service
+      systemd:
+        name: "{{ app_name }}"
+        state: stopped
+
+    - name: Checkout previous version
+      git:
+        repo: "{{ git_repo }}"
+        dest: "{{ app_home }}"
+        version: "{{ rollback_version }}"
+        force: yes
+      become_user: "{{ app_user }}"
+      register: git_rollback
+
+    - name: Reinstall dependencies for rollback version
+      pip:
+        requirements: "{{ app_home }}/backend/requirements.txt"
+        virtualenv: "{{ virtualenv_path }}"
+        virtualenv_python: python{{ python_version }}
+
+    - name: Get current database version
+      command: "{{ virtualenv_path }}/bin/alembic current"
+      args:
+        chdir: "{{ app_home }}/backend"
+      environment:
+        DATABASE_URL: "{{ database_url }}"
+        SECRET_KEY: "{{ secret_key }}"
+        REDIS_URL: "{{ redis_url }}"
+        SKIP_SETTINGS_VALIDATION: "true"
+      become_user: "{{ app_user }}"
+      register: current_db_version
+      changed_when: false
+
+    - name: Display current database version
+      debug:
+        msg: "Current database version: {{ current_db_version.stdout }}"
+
+    - name: Warn about database rollback
+      debug:
+        msg:
+          - "⚠️  WARNING: Database rollback may result in data loss!"
+          - "Current DB version: {{ current_db_version.stdout }}"
+          - "If schema changes exist, manual intervention may be required"
+
+    - name: Pause for database rollback consideration
+      pause:
+        prompt: "Do you need to rollback database migrations? If yes, do it manually, then press ENTER. Otherwise just press ENTER to continue."
+      when: rollback_confirm | default(true) | bool
+
+    - name: Start application service
+      systemd:
+        name: "{{ app_name }}"
+        state: started
+
+    - name: Wait for application to start
+      wait_for:
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 60
+
+    - name: Verify application health after rollback
+      uri:
+        url: "{{ healthcheck_url }}"
+        status_code: 200
+      register: health_check
+      retries: "{{ healthcheck_retries }}"
+      delay: "{{ healthcheck_delay }}"
+      until: health_check.status == 200
+
+  post_tasks:
+    - name: Display rollback summary
+      debug:
+        msg:
+          - "✅ Rollback completed for {{ inventory_hostname }}"
+          - "Rolled back to: {{ rollback_version }}"
+          - "Health Status: {{ 'HEALTHY' if health_check.status == 200 else 'UNHEALTHY' }}"
+
+- name: Reload Nginx
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Reload Nginx
+      systemd:
+        name: nginx
+        state: reloaded
+
+- name: Final verification
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Verify all applications are responding
+      uri:
+        url: "https://{{ domain_name }}/health"
+        status_code: 200
+        validate_certs: "{{ use_ssl }}"
+      register: final_health
+
+    - name: Display final rollback status
+      debug:
+        msg:
+          - "🔄 Rollback completed across all servers"
+          - "Application Version: {{ rollback_version }}"
+          - "All health checks: {{ 'PASSED ✅' if final_health.status == 200 else 'FAILED ❌' }}"

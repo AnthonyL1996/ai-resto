@@ -1,0 +1,31 @@
+# Redis Configuration
+# Managed by Ansible
+
+# Network
+bind 0.0.0.0
+protected-mode yes
+port {{ redis_port | default('6379') }}
+timeout 300
+
+# General
+daemonize no
+supervised systemd
+pidfile /var/run/redis/redis-server.pid
+loglevel notice
+logfile /var/log/redis/redis-server.log
+
+# Persistence
+dir /var/lib/redis
+dbfilename dump.rdb
+rdbcompression yes
+rdbchecksum yes
+
+# Memory
+maxmemory {{ redis_maxmemory | default('256mb') }}
+maxmemory-policy allkeys-lru
+
+# Security
+# requirepass {{ redis_password | default('') }}
+
+# Limits
+maxclients 10000
