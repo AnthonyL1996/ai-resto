@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from database import engine, SessionLocal, redis_client
-from models.base import Base
 from routes import orders, menu, auth, reservations, payments, kds
 from utils.logger import setup_logger
 
@@ -53,12 +52,10 @@ async def startup_event():
     logger.info(f"Debug mode: {settings.debug}")
     logger.info(f"Rate limiting: {'enabled' if settings.rate_limit_enabled else 'disabled'}")
 
-    # Warning: This should be replaced with Alembic migrations in production
-    if settings.environment == "development":
-        logger.warning("Running in development mode - creating tables with create_all()")
-        Base.metadata.create_all(bind=engine)
-    else:
-        logger.info("Production mode - assuming migrations have been run")
+    # Database migrations are managed by Alembic
+    # To run migrations: alembic upgrade head
+    # To create a new migration: alembic revision --autogenerate -m "description"
+    logger.info("Database schema managed by Alembic migrations")
 
 
 @app.on_event("shutdown")
