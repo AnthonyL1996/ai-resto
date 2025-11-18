@@ -366,3 +366,75 @@ For general issues, create a GitHub issue.
 
 **Last Updated:** 2025-11-18
 **Version:** 1.0.0
+
+---
+
+## 🗄️ Database Migrations
+
+### Overview
+
+Database schema changes are managed using **Alembic** migrations. Never use `Base.metadata.create_all()` - always use migrations.
+
+### Quick Start
+
+**Apply migrations:**
+```bash
+cd backend
+alembic upgrade head
+```
+
+**Check current version:**
+```bash
+alembic current
+```
+
+**Create new migration (after model changes):**
+```bash
+alembic revision --autogenerate -m "Description of changes"
+```
+
+### Important Notes
+
+- ✅ Always review auto-generated migrations before applying
+- ✅ Test migrations locally (upgrade AND downgrade)
+- ✅ Never edit applied migrations - create new ones
+- ✅ Backup database before production migrations
+- ⚠️ Run `alembic upgrade head` after pulling latest code
+
+### Production Deployment
+
+**Pre-deployment:**
+1. Backup database: `pg_dump ... > backup.sql`
+2. Review migration files
+3. Test on staging environment
+
+**Apply migrations:**
+```bash
+cd backend
+alembic upgrade head
+```
+
+**Rollback if needed:**
+```bash
+alembic downgrade -1
+```
+
+### Detailed Documentation
+
+See [`DATABASE_MIGRATIONS.md`](DATABASE_MIGRATIONS.md) for complete guide including:
+- Creating migrations
+- Rolling back changes
+- Handling data migrations
+- Zero-downtime deployments
+- Troubleshooting
+
+### CI/CD Integration
+
+Migrations are automatically validated and applied via GitHub Actions:
+- PRs: Migrations are validated and tested
+- Staging: Auto-applied on push to `staging` branch
+- Production: Auto-applied on push to `main` branch
+
+See [`.github/workflows/database-migrations.yml`](.github/workflows/database-migrations.yml)
+
+---

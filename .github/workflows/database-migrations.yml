@@ -1,0 +1,365 @@
+name: Database Migrations
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - 'backend/alembic/versions/**'
+      - 'backend/models/**'
+      - '.github/workflows/database-migrations.yml'
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - 'backend/alembic/versions/**'
+      - 'backend/models/**'
+
+env:
+  PYTHON_VERSION: '3.10'
+
+jobs:
+  validate-migrations:
+    name: Validate Migrations
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: restaurant
+          POSTGRES_PASSWORD: restaurant123
+          POSTGRES_DB: restaurant_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create .env file for testing
+        run: |
+          cd backend
+          cat > .env << EOF
+          DATABASE_URL=postgresql://restaurant:restaurant123@localhost:5432/restaurant_db
+          SECRET_KEY=test-secret-key-for-ci-do-not-use-in-production-32chars
+          REDIS_URL=redis://localhost:6379/0
+          ENVIRONMENT=development
+          DEBUG=True
+          ALLOWED_ORIGINS=http://localhost:5173
+          SKIP_SETTINGS_VALIDATION=true
+          EOF
+
+      - name: Check migration files syntax
+        run: |
+          cd backend
+          python -c "import py_compile; import glob; [py_compile.compile(f, doraise=True) for f in glob.glob('alembic/versions/*.py')]"
+
+      - name: Show current database version
+        run: |
+          cd backend
+          alembic current || echo "No migrations applied yet"
+
+      - name: Apply migrations (upgrade)
+        run: |
+          cd backend
+          alembic upgrade head
+
+      - name: Verify database schema
+        run: |
+          cd backend
+          python << 'PYTHON_SCRIPT'
+          from database import engine
+          from sqlalchemy import inspect, text
+
+          inspector = inspect(engine)
+          tables = inspector.get_table_names()
+
+          print("✅ Database tables created:")
+          for table in tables:
+            print(f"  - {table}")
+
+          # Verify expected tables exist
+          expected_tables = ['customers', 'menu_items', 'orders', 'reservations']
+          for expected in expected_tables:
+            if expected in tables:
+              print(f"✅ {expected} table exists")
+            else:
+              print(f"❌ {expected} table is missing!")
+              exit(1)
+
+          # Test a simple query
+          with engine.connect() as conn:
+            result = conn.execute(text("SELECT 1")).scalar()
+            print(f"\n✅ Database connection test: {result}")
+          PYTHON_SCRIPT
+
+      - name: Test migration rollback
+        run: |
+          cd backend
+          echo "Testing rollback..."
+          alembic downgrade -1
+          echo "Testing re-apply..."
+          alembic upgrade head
+          echo "✅ Rollback and re-apply successful"
+
+      - name: Check for pending migrations
+        run: |
+          cd backend
+          python << 'PYTHON_SCRIPT'
+          from alembic.config import Config
+          from alembic import command
+          from alembic.script import ScriptDirectory
+          from alembic.runtime.migration import MigrationContext
+
+          config = Config("alembic.ini")
+          script = ScriptDirectory.from_config(config)
+
+          from database import engine
+          with engine.connect() as connection:
+            context = MigrationContext.configure(connection)
+            current_rev = context.get_current_revision()
+
+            head_rev = script.get_current_head()
+
+            if current_rev != head_rev:
+              print(f"❌ Database is not up to date!")
+              print(f"   Current: {current_rev}")
+              print(f"   Head: {head_rev}")
+              exit(1)
+            else:
+              print(f"✅ Database is up to date: {current_rev}")
+          PYTHON_SCRIPT
+
+  apply-migrations-staging:
+    name: Apply Migrations to Staging
+    runs-on: ubuntu-latest
+    needs: validate-migrations
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: https://staging.your-domain.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create .env from secrets
+        run: |
+          cd backend
+          cat > .env << EOF
+          DATABASE_URL=${{ secrets.STAGING_DATABASE_URL }}
+          SECRET_KEY=${{ secrets.STAGING_SECRET_KEY }}
+          REDIS_URL=${{ secrets.STAGING_REDIS_URL }}
+          ENVIRONMENT=staging
+          DEBUG=False
+          ALLOWED_ORIGINS=${{ secrets.STAGING_ALLOWED_ORIGINS }}
+          EOF
+
+      - name: Backup database (optional - configure with your backup solution)
+        run: |
+          echo "Backing up database..."
+          # Add your backup command here
+          # Example: pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql
+
+      - name: Apply migrations
+        run: |
+          cd backend
+          alembic upgrade head
+
+      - name: Verify migrations
+        run: |
+          cd backend
+          alembic current
+
+      - name: Send notification on success
+        if: success()
+        run: |
+          echo "✅ Migrations applied successfully to staging"
+          # Add notification webhook here (Slack, Discord, etc.)
+
+      - name: Send notification on failure
+        if: failure()
+        run: |
+          echo "❌ Migration failed on staging - rollback may be needed"
+          # Add alert notification here
+
+  apply-migrations-production:
+    name: Apply Migrations to Production
+    runs-on: ubuntu-latest
+    needs: validate-migrations
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://your-domain.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create .env from secrets
+        run: |
+          cd backend
+          cat > .env << EOF
+          DATABASE_URL=${{ secrets.PRODUCTION_DATABASE_URL }}
+          SECRET_KEY=${{ secrets.PRODUCTION_SECRET_KEY }}
+          REDIS_URL=${{ secrets.PRODUCTION_REDIS_URL }}
+          ENVIRONMENT=production
+          DEBUG=False
+          ALLOWED_ORIGINS=${{ secrets.PRODUCTION_ALLOWED_ORIGINS }}
+          EOF
+
+      - name: Backup database
+        run: |
+          echo "Creating production database backup..."
+          # CRITICAL: Add your production backup command here
+          # Example: pg_dump $DATABASE_URL | aws s3 cp - s3://backups/prod_$(date +%Y%m%d_%H%M%S).sql
+
+      - name: Apply migrations with verification
+        run: |
+          cd backend
+
+          echo "Current database version:"
+          alembic current
+
+          echo "Applying migrations..."
+          alembic upgrade head
+
+          echo "New database version:"
+          alembic current
+
+      - name: Verify database health
+        run: |
+          cd backend
+          python << 'PYTHON_SCRIPT'
+          from database import engine, redis_client
+          from sqlalchemy import text
+
+          # Test database
+          with engine.connect() as conn:
+            result = conn.execute(text("SELECT COUNT(*) FROM customers")).scalar()
+            print(f"✅ Database health check: {result} customers")
+
+          # Test Redis
+          redis_client.ping()
+          print("✅ Redis health check: OK")
+          PYTHON_SCRIPT
+
+      - name: Send success notification
+        if: success()
+        run: |
+          echo "✅ Production migrations completed successfully"
+          # Add production success notification (email, Slack, PagerDuty, etc.)
+
+      - name: Send failure alert
+        if: failure()
+        run: |
+          echo "❌ CRITICAL: Production migration failed - immediate action required"
+          # Add critical alert notification
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          cd backend
+          echo "Attempting automatic rollback..."
+          alembic downgrade -1
+          # Add notification about rollback
+
+  check-migration-conflicts:
+    name: Check for Migration Conflicts
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check for multiple heads
+        run: |
+          cd backend
+          pip install alembic
+
+          # Create dummy .env
+          echo "DATABASE_URL=postgresql://dummy:dummy@localhost/dummy" > .env
+          echo "SECRET_KEY=dummy-key-for-validation" >> .env
+          echo "REDIS_URL=redis://localhost:6379/0" >> .env
+          echo "SKIP_SETTINGS_VALIDATION=true" >> .env
+
+          # Check for multiple heads (branching)
+          HEADS=$(alembic heads 2>&1 | grep -c "^[a-f0-9]" || true)
+          if [ "$HEADS" -gt 1 ]; then
+            echo "❌ Multiple migration heads detected! Merge required."
+            echo "Run: alembic merge heads -m 'Merge migrations'"
+            exit 1
+          else
+            echo "✅ No migration conflicts detected"
+          fi
+
+      - name: Check migration file naming
+        run: |
+          cd backend/alembic/versions
+          for file in *.py; do
+            if [ "$file" != "__init__.py" ]; then
+              # Check file has proper naming
+              if [[ ! "$file" =~ ^[a-f0-9]+_.*\.py$ ]]; then
+                echo "❌ Invalid migration filename: $file"
+                exit 1
+              fi
+            fi
+          done
+          echo "✅ All migration files properly named"
